@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class RelationshipState(BaseModel):
@@ -13,6 +13,13 @@ class RelationshipState(BaseModel):
     shared_experience_count: int = 0
     last_interaction: Optional[datetime] = None
     notes: list[str] = Field(default_factory=list)
+
+
+class Belief(BaseModel):
+    """A belief with conviction strength that can evolve over time."""
+
+    text: str
+    conviction: float = Field(default=0.7, ge=0.0, le=1.0)
 
 
 class CharacterState(BaseModel):
@@ -33,8 +40,24 @@ class CharacterState(BaseModel):
         "focus": 0.5,
         "excitement": 0.3,
     })
-    beliefs: list[str] = Field(default_factory=list)
+    beliefs: list[Belief] = Field(default_factory=list)
     relationships: dict[str, RelationshipState] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _migrate_beliefs(cls, data: Any) -> Any:
+        """Migrate old plain-string beliefs to Belief objects."""
+        if isinstance(data, dict) and "beliefs" in data:
+            migrated = []
+            for b in data["beliefs"]:
+                if isinstance(b, str):
+                    migrated.append({"text": b, "conviction": 0.7})
+                elif isinstance(b, dict):
+                    migrated.append(b)
+                else:
+                    migrated.append(b)
+            data["beliefs"] = migrated
+        return data
 
     def update_mood(self, changes: dict[str, float]) -> None:
         """Update mood values, clamped to [0.0, 1.0]."""
@@ -63,13 +86,40 @@ class CharacterState(BaseModel):
                 setattr(rel, key, value)
         rel.last_interaction = datetime.now(timezone.utc)
 
-    def add_belief(self, belief: str) -> None:
-        if belief not in self.beliefs:
-            self.beliefs.append(belief)
+    def add_belief(self, belief: str, conviction: float = 0.7) -> None:
+        """Add a new belief or strengthen an existing one."""
+        for b in self.beliefs:
+            if b.text == belief:
+                # Belief already exists — strengthen it
+                b.conviction = min(1.0, b.conviction + 0.05)
+                return
+        self.beliefs.append(Belief(text=belief, conviction=max(0.1, min(1.0, conviction))))
 
     def remove_belief(self, belief: str) -> None:
-        if belief in self.beliefs:
-            self.beliefs.remove(belief)
+        """Remove a belief by text."""
+        self.beliefs = [b for b in self.beliefs if b.text != belief]
+
+    def evolve_belief(self, belief_text: str, delta: float) -> None:
+        """Shift a belief's conviction by delta (clamped to ±0.1 per call).
+
+        If conviction drops below 0.1, the belief is removed.
+        """
+        clamped = max(-0.1, min(0.1, delta))
+        for b in self.beliefs:
+            if b.text == belief_text:
+                b.conviction = max(0.0, min(1.0, b.conviction + clamped))
+                if b.conviction < 0.1:
+                    self.beliefs.remove(b)
+                return
+
+    def transform_belief(self, old_text: str, new_text: str) -> None:
+        """Transform a belief into a new version, carrying over conviction."""
+        for b in self.beliefs:
+            if b.text == old_text:
+                b.text = new_text
+                return
+        # If old belief not found, add the new one
+        self.add_belief(new_text, conviction=0.5)
 
     def to_prompt_description(self) -> str:
         """Generate Turkish natural language description for system prompt."""
@@ -118,10 +168,17 @@ class CharacterState(BaseModel):
                 mood_parts.append(f"düşük {label.lower()}")
         lines.append(f"Şu anki ruh halin: {', '.join(mood_parts)}.")
 
-        # Beliefs
+        # Beliefs with conviction levels
         if self.beliefs:
-            beliefs_str = "; ".join(self.beliefs)
-            lines.append(f"İnançların: {beliefs_str}.")
+            belief_parts = []
+            for b in sorted(self.beliefs, key=lambda x: x.conviction, reverse=True):
+                if b.conviction >= 0.8:
+                    belief_parts.append(f"'{b.text}' (güçlü inanç)")
+                elif b.conviction >= 0.5:
+                    belief_parts.append(f"'{b.text}'")
+                else:
+                    belief_parts.append(f"'{b.text}' (sorguluyorsun)")
+            lines.append(f"İnançların: {'; '.join(belief_parts)}.")
 
         # Relationships
         if self.relationships:

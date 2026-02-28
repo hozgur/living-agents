@@ -33,6 +33,7 @@ REFLECTION_PROMPT = """Sen {agent_name} olarak az önce şu konuşmayı yaptın:
 {conversation_summary}
 
 Katılımcılar: {participants_info}
+Mevcut inançların: {current_beliefs}
 
 Şimdi bu deneyimi değerlendir ve SADECE aşağıdaki JSON formatında yanıtla (başka metin ekleme):
 {{
@@ -47,8 +48,15 @@ Katılımcılar: {participants_info}
   "character_updates": {{
     "mood_changes": {{"energy": 0.0, "happiness": 0.0, "anxiety": 0.0, "focus": 0.0, "excitement": 0.0}},
     "trait_nudges": {{}},
-    "new_beliefs": [],
-    "removed_beliefs": []
+    "new_beliefs": ["bu konuşmadan doğan yeni bir inanç varsa"],
+    "removed_beliefs": ["artık inanmadığın bir şey varsa"],
+    "belief_evolutions": {{
+      "mevcut inanç metni": 0.05,
+      "başka bir inanç": -0.05
+    }},
+    "belief_transformations": {{
+      "eski inanç metni": "bu inancın evrilmiş yeni hali"
+    }}
   }},
   "relationship_updates": {{
     "kişi_adı": {{
@@ -72,15 +80,20 @@ Kurallar:
 - SADECE geçerli JSON döndür, başka bir şey yazma
 - summary alanına ASLA "kısa bir sohbet yaptık" gibi genel ifadeler yazma. SOMUT detay ver.
 - relationship_updates anahtarları kişi ADLARI olmalı (örn: "Operator", "Luna", "Genesis")
-- key_facts listesinde her madde "Kim: ne" formatında olmalı (örn: "Luna: hakikatin katmanlı olduğunu savunuyor")"""
+- key_facts listesinde her madde "Kim: ne" formatında olmalı (örn: "Luna: hakikatin katmanlı olduğunu savunuyor")
+- İNANÇ EVRİMİ: Mevcut inançlarına bak. Bu konuşma bir inancını güçlendirdi mi (+0.05), zayıflattı mı (-0.05)?
+  Bir inanç dönüştüyse belief_transformations'a yaz (örn: "dünya adil değil" → "dünya adil değil ama değiştirilebilir").
+  belief_evolutions ve belief_transformations boş olabilir ama her reflection'da inançlarını gözden geçir."""
 
 
 class ReflectionEngine:
     """Performs structured self-reflection after conversations."""
 
-    def __init__(self, settings: Settings | None = None):
+    def __init__(self, settings: Settings | None = None, on_reflection_event=None):
         self.settings = settings or Settings()
         self.client = anthropic.AsyncAnthropic(api_key=self.settings.ANTHROPIC_API_KEY)
+        # Callback: (agent_name, event_text, event_type) for UI event log
+        self._on_reflection_event = on_reflection_event
 
     async def reflect(
         self,
@@ -104,10 +117,19 @@ class ReflectionEngine:
             conversation_messages, agent.identity.name
         )
 
+        # Format current beliefs for the prompt
+        current_beliefs = "yok"
+        if agent.character.beliefs:
+            current_beliefs = "; ".join(
+                f"'{b.text}' (güç: {b.conviction:.1f})"
+                for b in agent.character.beliefs
+            )
+
         prompt = REFLECTION_PROMPT.format(
             agent_name=agent.identity.name,
             conversation_summary=conversation_summary,
             participants_info=participants_info,
+            current_beliefs=current_beliefs,
         )
 
         # Call Claude for reflection
@@ -137,6 +159,16 @@ class ReflectionEngine:
 
         return reflection
 
+    async def _emit(self, agent_name: str, text: str, event_type: str = "reflection") -> None:
+        """Fire a reflection event to the UI."""
+        if self._on_reflection_event:
+            try:
+                result = self._on_reflection_event(agent_name, text, event_type)
+                if asyncio.iscoroutine(result):
+                    await result
+            except Exception:
+                pass
+
     async def _apply_reflection(
         self,
         agent: Agent,
@@ -149,6 +181,8 @@ class ReflectionEngine:
         if memory is None:
             logger.warning("Cannot apply reflection — agent has no memory")
             return
+
+        name = agent.identity.name
 
         # 1. Save episode to episodic memory
         episode_data = reflection.get("episode", {})
@@ -168,6 +202,7 @@ class ReflectionEngine:
             conversation_id=conversation_id,
         )
         await memory.save_episode(episode)
+        await self._emit(name, f"💾 Yeni anı: {summary[:80]}", "memory")
 
         # 2. Apply character updates
         char_updates = reflection.get("character_updates", {})
@@ -188,13 +223,32 @@ class ReflectionEngine:
             if isinstance(delta, (int, float)):
                 agent.character.evolve_trait(trait, delta)
 
-        # Beliefs
+        # Beliefs — add/remove
         for belief in char_updates.get("new_beliefs", []):
             if isinstance(belief, str) and belief:
                 agent.character.add_belief(belief)
+                await self._emit(name, f"🌱 Yeni inanç: \"{belief}\"", "belief")
         for belief in char_updates.get("removed_beliefs", []):
             if isinstance(belief, str) and belief:
                 agent.character.remove_belief(belief)
+                await self._emit(name, f"❌ İnanç bırakıldı: \"{belief}\"", "belief")
+
+        # Belief evolutions — strengthen or weaken existing beliefs
+        for belief_text, delta in char_updates.get("belief_evolutions", {}).items():
+            if isinstance(delta, (int, float)) and isinstance(belief_text, str):
+                agent.character.evolve_belief(belief_text, delta)
+                direction = "güçlendi 📈" if delta > 0 else "zayıfladı 📉"
+                await self._emit(
+                    name, f"💭 İnanç {direction}: \"{belief_text}\" ({delta:+.2f})", "belief"
+                )
+
+        # Belief transformations — old belief becomes new belief
+        for old_text, new_text in char_updates.get("belief_transformations", {}).items():
+            if isinstance(old_text, str) and isinstance(new_text, str) and new_text:
+                agent.character.transform_belief(old_text, new_text)
+                await self._emit(
+                    name, f"🔄 İnanç dönüştü: \"{old_text}\" → \"{new_text}\"", "belief"
+                )
 
         # 3. Apply relationship updates (keyed by name, e.g. "Luna", "Operator")
         rel_updates = reflection.get("relationship_updates", {})
@@ -229,6 +283,9 @@ class ReflectionEngine:
                     rel_changes["notes"] = note  # update_relationship appends strings
             if rel_changes:
                 agent.character.update_relationship(entity_id, rel_changes)
+                await self._emit(
+                    name, f"🤝 {entity_id} ilişkisi güncellendi", "relationship"
+                )
 
         # 4. Save new knowledge facts
         for fact_data in reflection.get("new_knowledge", []):
@@ -247,6 +304,9 @@ class ReflectionEngine:
                     source=f"reflection:{conversation_id or 'unknown'}",
                 )
                 await memory.save_fact(fact)
+                await self._emit(
+                    name, f"📚 Öğrendi: {subject} → {predicate} → {obj}", "knowledge"
+                )
 
         # 5. Log self-reflection
         self_reflection = reflection.get("self_reflection", "")

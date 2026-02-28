@@ -39,7 +39,10 @@ class Orchestrator:
         self.registry = WorldRegistry()
         self.message_bus = MessageBus(db_path=self.settings.DB_PATH)
         self.shared_state = SharedWorldState(db_path=self.settings.DB_PATH)
-        self.reflection_engine = ReflectionEngine(settings=self.settings)
+        self.reflection_engine = ReflectionEngine(
+            settings=self.settings,
+            on_reflection_event=self._on_reflection_event,
+        )
 
         self.agents: dict[str, Agent] = {}
         self.conversation_engines: dict[str, ConversationEngine] = {}
@@ -522,6 +525,12 @@ class Orchestrator:
     def on_conversation_message(self, callback) -> None:
         """Register a callback for conversation messages: callback(speaker, message, emoji)."""
         self._on_conversation_message.append(callback)
+
+    async def _on_reflection_event(
+        self, agent_name: str, text: str, event_type: str = ""
+    ) -> None:
+        """Route reflection events to the UI event log."""
+        await self._fire_event(f"{agent_name}: {text}", event_type)
 
     async def _fire_event(self, text: str, event_type: str = "") -> None:
         """Notify all registered event callbacks."""

@@ -169,6 +169,10 @@ class LivingAgentsApp(App):
             "creation": "green",
             "conversation": "blue",
             "reflection": "magenta",
+            "memory": "cyan",
+            "belief": "yellow",
+            "knowledge": "green",
+            "relationship": "blue",
         }.get(event_type, "")
         if self._participant_screen:
             self._participant_screen.log_event(text, style)

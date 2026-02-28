@@ -738,7 +738,9 @@ class ParticipantModeScreen(Screen):
         conv.add_system_message(f"Ruh hali: {mood_str}")
 
         if agent.character.beliefs:
-            conv.add_system_message(f"İnançlar: {'; '.join(agent.character.beliefs)}")
+            for b in agent.character.beliefs:
+                bar = "█" * int(b.conviction * 10) + "░" * (10 - int(b.conviction * 10))
+                conv.add_system_message(f"  İnanç: [{bar}] {b.conviction:.1f} — {b.text}")
 
         if agent.character.relationships:
             for eid, rel in agent.character.relationships.items():
