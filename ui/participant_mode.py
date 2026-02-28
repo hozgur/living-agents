@@ -24,6 +24,35 @@ if TYPE_CHECKING:
     from world.orchestrator import Orchestrator
 
 
+# Short model name aliases
+MODEL_ALIASES = {
+    "sonnet": "claude-sonnet-4-20250514",
+    "sonnet-4": "claude-sonnet-4-20250514",
+    "sonnet-4.6": "claude-sonnet-4-6",
+    "haiku": "claude-haiku-4-5-20251001",
+    "haiku-4.5": "claude-haiku-4-5-20251001",
+    "opus": "claude-opus-4-6",
+    "opus-4.6": "claude-opus-4-6",
+}
+# Known valid model IDs for validation
+KNOWN_MODELS = {
+    "claude-sonnet-4-20250514",
+    "claude-sonnet-4-6",
+    "claude-haiku-4-5-20251001",
+    "claude-opus-4-6",
+}
+MODEL_ALIASES_REVERSE = {v: k for k, v in MODEL_ALIASES.items()}
+
+# Valid task-based model fields
+MODEL_TASKS = {
+    "chat": "MODEL_CHAT",
+    "reflection": "MODEL_REFLECTION",
+    "autonomy": "MODEL_AUTONOMY",
+    "creation": "MODEL_CREATION",
+    "compression": "MODEL_COMPRESSION",
+}
+
+
 # Preset personality templates for quick agent creation
 PERSONALITY_PRESETS = {
     "1": {
@@ -181,7 +210,7 @@ class ParticipantModeScreen(Screen):
                 )
                 yield ConversationView(id="part-conversation", wrap=True, markup=True)
                 yield Static(
-                    "@Agent mesaj | /create | /stop | /agents | /converse | /help | /god",
+                    "@Agent mesaj | /create | /model | /stop | /agents | /converse | /help | /god",
                     id="part-help",
                 )
                 yield Input(placeholder="@Genesis merhaba! veya /komut ...", id="part-input")
@@ -588,6 +617,7 @@ class ParticipantModeScreen(Screen):
             conv.add_system_message("  /inspect <agent> — Agent detaylarını göster")
             conv.add_system_message("  /memory <agent> — Agent anılarını göster")
             conv.add_system_message("  /converse <a1> <a2> <mesaj> — İki agent'ı konuştur")
+            conv.add_system_message("  /model — Model ayarlarını göster/değiştir")
             conv.add_system_message("  /stop — Devam eden agent konuşmalarını durdur")
             conv.add_system_message("  /log — Chat geçmişini göster (dosya yolu + son mesajlar)")
             conv.add_system_message("  /status — Dünya durumu")
@@ -704,6 +734,9 @@ class ParticipantModeScreen(Screen):
             else:
                 conv.add_system_message("Henüz chat log dosyası oluşmadı.")
 
+        elif cmd == "/model":
+            self._handle_model_command(args, conv)
+
         elif cmd == "/create":
             self._start_create_wizard()
 
@@ -725,6 +758,79 @@ class ParticipantModeScreen(Screen):
             conv.add_system_message(
                 f"Bilinmeyen komut: {cmd}. /help yazarak komutları görebilirsiniz."
             )
+
+    def _handle_model_command(self, args: list[str], conv) -> None:
+        """Handle /model command for viewing and changing model settings."""
+        settings = self.orchestrator.settings
+
+        if not args:
+            # Show current model settings
+            conv.add_system_message("--- Model Ayarları ---")
+            for task, field in MODEL_TASKS.items():
+                model_id = getattr(settings, field)
+                short = self._get_model_short_name(model_id)
+                conv.add_system_message(f"  {task:12s} → {short} ({model_id})")
+            conv.add_system_message("---")
+            conv.add_system_message(
+                "Değiştirmek için: /model <görev> <model>  "
+                "Örn: /model chat haiku"
+            )
+            conv.add_system_message(
+                f"Kısa isimler: {', '.join(MODEL_ALIASES.keys())}"
+            )
+            return
+
+        if len(args) < 2:
+            conv.add_system_message(
+                "Kullanım: /model <görev> <model>\n"
+                f"Görevler: {', '.join(MODEL_TASKS.keys())}, all\n"
+                f"Modeller: {', '.join(MODEL_ALIASES.keys())} veya tam model ID"
+            )
+            return
+
+        task = args[0].lower()
+        model_input = args[1].lower()
+
+        # Resolve model name
+        model_id = MODEL_ALIASES.get(model_input)
+        if model_id is None:
+            # Not an alias — check if it looks like a valid model ID
+            if model_input.startswith("claude-") and model_input in KNOWN_MODELS:
+                model_id = model_input
+            elif model_input.startswith("claude-"):
+                conv.add_system_message(
+                    f"⚠ Bilinmeyen model: {model_input}\n"
+                    f"Bilinen modeller: {', '.join(sorted(KNOWN_MODELS))}\n"
+                    f"Kısa isimler: {', '.join(sorted(k for k in MODEL_ALIASES if '-' not in k))}"
+                )
+                return
+            else:
+                conv.add_system_message(
+                    f"⚠ Geçersiz model: {model_input}\n"
+                    f"Kısa isimler: {', '.join(sorted(k for k in MODEL_ALIASES if '-' not in k))}\n"
+                    f"Veya tam model ID girin (claude-... ile başlamalı)"
+                )
+                return
+
+        if task == "all":
+            # Set all tasks to the same model
+            for field in MODEL_TASKS.values():
+                setattr(settings, field, model_id)
+            short = self._get_model_short_name(model_id)
+            conv.add_system_message(f"Tüm görevler → {short} ({model_id})")
+        elif task in MODEL_TASKS:
+            field = MODEL_TASKS[task]
+            setattr(settings, field, model_id)
+            short = self._get_model_short_name(model_id)
+            conv.add_system_message(f"{task} modeli → {short} ({model_id})")
+        else:
+            conv.add_system_message(
+                f"Bilinmeyen görev: {task}. "
+                f"Geçerli görevler: {', '.join(MODEL_TASKS.keys())}, all"
+            )
+            return
+
+        self.refresh_token_display()
 
     def _find_agent_by_name(self, name: str):
         """Find an agent by name (case-insensitive)."""
@@ -763,12 +869,17 @@ class ParticipantModeScreen(Screen):
                     f"  Uzmanlık ({domain}): seviye={exp.level:.2f}, tutku={exp.passion:.2f}"
                 )
 
+    def _get_model_short_name(self, model_id: str) -> str:
+        """Return short alias for a model ID, or the ID itself."""
+        return MODEL_ALIASES_REVERSE.get(model_id, model_id)
+
     def refresh_token_display(self) -> None:
         try:
             from core.token_tracker import TokenTracker
             tracker = TokenTracker()
+            model_short = self._get_model_short_name(self.orchestrator.settings.MODEL_CHAT)
             self.query_one("#part-statusbar", Static).update(
-                f" ESC Debug Mode | Q Quit | 🔢 {tracker.summary()}"
+                f" ESC Debug Mode | Q Quit | Model: {model_short} | 🔢 {tracker.summary()}"
             )
         except Exception:
             pass

@@ -6,6 +6,14 @@ class Settings(BaseSettings):
 
     ANTHROPIC_API_KEY: str = ""
     MODEL_NAME: str = "claude-sonnet-4-20250514"
+
+    # Task-based model overrides (fall back to MODEL_NAME if not set)
+    MODEL_CHAT: str = "claude-sonnet-4-20250514"        # Sohbet
+    MODEL_REFLECTION: str = "claude-haiku-4-5-20251001"  # Reflection
+    MODEL_AUTONOMY: str = "claude-haiku-4-5-20251001"    # Otonom karar
+    MODEL_CREATION: str = "claude-sonnet-4-20250514"     # Agent oluşturma
+    MODEL_COMPRESSION: str = "claude-haiku-4-5-20251001" # Context sıkıştırma
+
     MAX_CONTEXT_TOKENS: int = 8000
     DB_PATH: str = "data/agents.db"
     CHROMA_PATH: str = "data/chroma"

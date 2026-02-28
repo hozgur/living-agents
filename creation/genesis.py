@@ -228,7 +228,7 @@ class GenesisSystem:
         for attempt in range(MAX_RETRIES):
             try:
                 response = await self.client.messages.create(
-                    model=self.settings.MODEL_NAME,
+                    model=self.settings.MODEL_CREATION,
                     max_tokens=1500,
                     system=system_prompt,
                     messages=[{"role": "user", "content": user_message}],

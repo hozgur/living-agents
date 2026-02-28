@@ -340,7 +340,7 @@ class ReflectionEngine:
         for attempt in range(MAX_RETRIES):
             try:
                 response = await self.client.messages.create(
-                    model=self.settings.MODEL_NAME,
+                    model=self.settings.MODEL_REFLECTION,
                     max_tokens=1024,
                     messages=[{"role": "user", "content": prompt}],
                 )

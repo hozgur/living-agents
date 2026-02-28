@@ -223,7 +223,7 @@ class ConversationEngine:
         last_error: Exception | None = None
 
         kwargs: dict[str, Any] = {
-            "model": self.settings.MODEL_NAME,
+            "model": self.settings.MODEL_CHAT,
             "max_tokens": max_tokens,
             "system": system_prompt,
             "messages": messages,
@@ -330,7 +330,7 @@ class ConversationEngine:
                 {"role": "user", "content": tool_results},
             ]
             current_response = await self.client.messages.create(
-                model=self.settings.MODEL_NAME,
+                model=self.settings.MODEL_CHAT,
                 max_tokens=self.max_tokens_human,
                 system=system_prompt,
                 messages=current_messages,
@@ -376,7 +376,7 @@ class ConversationEngine:
         async def summarize_fn(prompt: str) -> str:
             """Use Claude to summarize conversation for compression."""
             response = await self.client.messages.create(
-                model=self.settings.MODEL_NAME,
+                model=self.settings.MODEL_COMPRESSION,
                 max_tokens=512,
                 messages=[{"role": "user", "content": prompt}],
             )

@@ -668,7 +668,7 @@ class Orchestrator:
 
         try:
             response = await client.messages.create(
-                model=self.settings.MODEL_NAME,
+                model=self.settings.MODEL_AUTONOMY,
                 max_tokens=50,
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -694,7 +694,7 @@ class Orchestrator:
                 client = anthropic.AsyncAnthropic(api_key=self.settings.ANTHROPIC_API_KEY)
                 try:
                     response = await client.messages.create(
-                        model=self.settings.MODEL_NAME,
+                        model=self.settings.MODEL_CHAT,
                         max_tokens=200,
                         messages=[{
                             "role": "user",
