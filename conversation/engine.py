@@ -104,8 +104,10 @@ class ConversationEngine:
         self.participants.add(sender_id)
         self.participants.add(self.agent.identity.agent_id)
 
-        # 1. Add incoming message to working memory
-        memory.working.add_message("user", user_message)
+        # 1. Add incoming message to working memory (with sender identity)
+        sender_label = self._resolve_sender_name(sender_id)
+        tagged_message = f"[{sender_label}]: {user_message}" if sender_label else user_message
+        memory.working.add_message("user", tagged_message)
 
         # 2. Build memory context
         memory_context = await memory.build_memory_context(user_message)
@@ -192,6 +194,18 @@ class ConversationEngine:
             if hasattr(orch, 'agents'):
                 return set(orch.agents.keys())
         return set()
+
+    def _resolve_sender_name(self, sender_id: str) -> str:
+        """Resolve a sender_id to a display name (e.g. 'Operator' or agent name)."""
+        if self._talk_to_agent_fn and hasattr(self._talk_to_agent_fn, '__self__'):
+            orch = self._talk_to_agent_fn.__self__
+            if hasattr(orch, 'registry'):
+                entity = orch.registry.get(sender_id)
+                if entity:
+                    return entity.name
+        if sender_id == "human":
+            return "Operator"
+        return sender_id
 
     async def _call_claude(
         self,
