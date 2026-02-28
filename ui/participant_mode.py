@@ -156,8 +156,6 @@ class ParticipantModeScreen(Screen):
         self.orchestrator = orchestrator
         self.human_id = human_id
         self._processing = False
-        # Last agent the user talked to (for convenience when no @mention)
-        self._last_target_id: str | None = target_agent_id
         # Create wizard state (None = not in creation mode)
         self._create_wizard: _CreateWizard | None = None
 
@@ -241,11 +239,6 @@ class ParticipantModeScreen(Screen):
         except Exception:
             pass
 
-    # --- legacy compat: switch_agent still works if called ---
-    def switch_agent(self, agent_id: str) -> None:
-        """Set the default target agent (backward compat)."""
-        self._last_target_id = agent_id
-
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         text = event.value.strip()
         if not text:
@@ -266,17 +259,18 @@ class ParticipantModeScreen(Screen):
         target_id, clean_text = self._parse_mention(text)
 
         if target_id is None:
-            # No @mention — use last target if available
-            if self._last_target_id:
-                target_id = self._last_target_id
-                clean_text = text
-            else:
+            # No @mention — broadcast to ALL agents
+            agents = list(self.orchestrator.agents.values())
+            if not agents:
                 conv = self.query_one("#part-conversation", ConversationView)
-                conv.add_system_message(
-                    "Kime yazmak istediğinizi belirtin. Örn: [bold]@Genesis merhaba![/]"
-                )
-                self._show_available_agents(conv)
+                conv.add_system_message("Henüz hiç agent yok.")
                 return
+            if not text.strip():
+                conv = self.query_one("#part-conversation", ConversationView)
+                conv.add_system_message("Mesaj boş olamaz.")
+                return
+            self._send_broadcast(text)
+            return
 
         if not clean_text:
             conv = self.query_one("#part-conversation", ConversationView)
@@ -292,7 +286,6 @@ class ParticipantModeScreen(Screen):
                 # Agent is not in a conversation, we're just waiting for a previous response
                 return
 
-        self._last_target_id = target_id
         self._send_message(target_id, clean_text, text)
 
     def _send_message(self, target_id: str, clean_text: str, original_text: str) -> None:
@@ -321,6 +314,25 @@ class ParticipantModeScreen(Screen):
             exclusive=False,
         )
 
+    def _send_broadcast(self, text: str) -> None:
+        """Send a message to ALL agents (no @mention = broadcast)."""
+        conv = self.query_one("#part-conversation", ConversationView)
+        agents = list(self.orchestrator.agents.values())
+
+        # Show user message once
+        conv.add_user_message("Sen", text)
+        agent_names = ", ".join(a.identity.name for a in agents)
+        conv.add_system_message(f"Herkes düşünüyor... ({agent_names})")
+
+        self._processing = True
+        # Launch one worker per agent so responses arrive as they complete
+        for agent in agents:
+            self.run_worker(
+                self._send_message_work(agent.identity.agent_id, text),
+                name="broadcast_message",
+                exclusive=False,
+            )
+
     async def _send_message_work(self, target_id: str, text: str) -> dict:
         """Background worker for Claude API call."""
         response = await self.orchestrator.handle_human_message(
@@ -338,17 +350,29 @@ class ParticipantModeScreen(Screen):
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """Handle worker completion."""
-        if event.worker.name == "send_message":
+        if event.worker.name in ("send_message", "broadcast_message"):
             if event.state == WorkerState.SUCCESS:
                 result = event.worker.result
                 conv = self.query_one("#part-conversation", ConversationView)
                 conv.add_agent_message(result["name"], result["response"], result["emoji"])
-                self._processing = False
+                # For broadcast, only clear processing when ALL broadcast workers are done
+                if event.worker.name == "broadcast_message":
+                    active = [w for w in self.workers if w.name == "broadcast_message" and w.state == WorkerState.RUNNING]
+                    if not active:
+                        self._processing = False
+                else:
+                    self._processing = False
                 self.refresh_world_status()
             elif event.state == WorkerState.ERROR:
                 conv = self.query_one("#part-conversation", ConversationView)
                 conv.add_system_message(f"Hata: {event.worker.error}")
-                self._processing = False
+                # Same logic for broadcast error
+                if event.worker.name == "broadcast_message":
+                    active = [w for w in self.workers if w.name == "broadcast_message" and w.state == WorkerState.RUNNING]
+                    if not active:
+                        self._processing = False
+                else:
+                    self._processing = False
 
         elif event.worker.name == "create_agent":
             conv = self.query_one("#part-conversation", ConversationView)
@@ -746,13 +770,6 @@ class ParticipantModeScreen(Screen):
             conv.add_system_message(f"Konuşma hatası: {e}")
         finally:
             self.refresh_world_status()
-
-    def _get_agent_name(self) -> str:
-        if self._last_target_id:
-            agent = self.orchestrator.agents.get(self._last_target_id)
-            if agent:
-                return agent.identity.name
-        return "?"
 
     def action_switch_god(self) -> None:
         self.app.switch_to_god_mode()

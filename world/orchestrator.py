@@ -589,7 +589,9 @@ class Orchestrator:
         # Single-turn exchange: send message, get one reply
         try:
             await self._fire_conversation(
-                from_agent.identity.name, message, from_agent.identity.avatar_emoji
+                from_agent.identity.name,
+                f"@{target_agent.identity.name} {message}",
+                from_agent.identity.avatar_emoji,
             )
 
             response = await self.handle_agent_to_agent(

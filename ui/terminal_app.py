@@ -161,8 +161,6 @@ class LivingAgentsApp(App):
         """Switch to Participant Mode screen (preserves state)."""
         if self.orchestrator is None:
             return
-        if agent_id and self._participant_screen:
-            self._participant_screen.switch_agent(agent_id)
         self.switch_screen("participant")
 
     def _on_world_event(self, text: str, event_type: str) -> None:

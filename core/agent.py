@@ -65,5 +65,7 @@ class Agent(BaseModel):
             f"- Anılarına doğal şekilde referans ver (\"geçen sefer konuştuğumuzda...\" gibi).\n"
             f"- İlişkilerin cevaplarını etkilesin — güvendiğin birine daha açık ol.\n"
             f"- Kullanıcı senden başka bir agent ile konuşmanı isterse, talk_to_agent tool'unu kullan. "
-            f"Konuşmayı hayal etme veya uydurma — gerçekten tool'u çağır."
+            f"Konuşmayı hayal etme veya uydurma — gerçekten tool'u çağır.\n"
+            f"- Bir agent'a mesaj yazarken @İsim ile hitap et (örn: @Luna bunu düşündün mü?).\n"
+            f"- Genel bir mesaj yazıyorsan (herkese hitap) kimseyi mention etme."
         )
