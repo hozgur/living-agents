@@ -99,10 +99,15 @@ class EpisodicMemory:
         if self._collection is None or self._collection.count() == 0:
             return []
 
-        results = self._collection.query(
-            query_texts=[query],
-            n_results=min(n, self._collection.count()),
-        )
+        try:
+            results = self._collection.query(
+                query_texts=[query],
+                n_results=min(n, self._collection.count()),
+            )
+        except Exception:
+            # ChromaDB HNSW index can become corrupted; fall back to empty recall
+            logger.warning("ChromaDB query failed for agent %s, returning empty recall", self.agent_id)
+            return []
 
         episode_ids = results["ids"][0] if results["ids"] else []
         if not episode_ids:
