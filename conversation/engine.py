@@ -18,6 +18,7 @@ import anthropic
 
 from config.settings import Settings
 from conversation.context_builder import build_messages, build_system_prompt
+from core.token_tracker import TokenTracker
 
 if TYPE_CHECKING:
     from conversation.reflection import ReflectionEngine
@@ -240,6 +241,7 @@ class ConversationEngine:
                     use_tools,
                 )
                 response = await self.client.messages.create(**kwargs)
+                TokenTracker().record(response.usage)
 
                 # Handle tool use
                 if response.stop_reason == "tool_use":
@@ -334,6 +336,7 @@ class ConversationEngine:
                 messages=current_messages,
                 tools=AGENT_TOOLS,
             )
+            TokenTracker().record(current_response.usage)
 
             # If this response is pure text, return it
             if current_response.stop_reason != "tool_use":
@@ -377,6 +380,7 @@ class ConversationEngine:
                 max_tokens=512,
                 messages=[{"role": "user", "content": prompt}],
             )
+            TokenTracker().record(response.usage)
             return response.content[0].text
 
         compressed = await memory.working.compress_if_needed(summarize_fn)

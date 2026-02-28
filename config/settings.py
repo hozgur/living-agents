@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     MAX_CONTEXT_TOKENS: int = 8000
     DB_PATH: str = "data/agents.db"
     CHROMA_PATH: str = "data/chroma"
-    AUTONOMY_INTERVAL: int = 60
+    AUTONOMY_INTERVAL: int = 180
     REFLECTION_THRESHOLD: int = 3
     MEMORY_DECAY_RATE: float = 0.01
     EMBEDDING_MODEL: str = "default"

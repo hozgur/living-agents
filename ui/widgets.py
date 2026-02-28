@@ -139,7 +139,7 @@ class ConversationView(RichLog):
 
 
 class StatsWidget(Static):
-    """Displays world statistics."""
+    """Displays world statistics and live token usage."""
 
     stats_text: reactive[str] = reactive("")
 
@@ -152,14 +152,21 @@ class StatsWidget(Static):
         except Exception:
             pass
 
-    async def update_stats(self, orchestrator) -> None:
-        """Refresh stats from orchestrator."""
+    def update_stats_sync(self, orchestrator) -> None:
+        """Refresh stats from orchestrator (sync, for timer use)."""
+        from core.token_tracker import TokenTracker
+
+        tracker = TokenTracker()
         agent_count = len(orchestrator.agents)
-        events = await orchestrator.shared_state.get_recent_events(n=100)
-        facts = await orchestrator.shared_state.get_facts()
 
         self.stats_text = (
             f"Agents: {agent_count}\n"
-            f"Events: {len(events)}\n"
-            f"Facts: {len(facts)}"
+            f"API: {tracker.api_calls} calls\n"
+            f"In: {tracker._fmt(tracker.input_tokens)}\n"
+            f"Out: {tracker._fmt(tracker.output_tokens)}\n"
+            f"Toplam: {tracker._fmt(tracker.total_tokens)}"
         )
+
+    async def update_stats(self, orchestrator) -> None:
+        """Refresh stats from orchestrator."""
+        self.update_stats_sync(orchestrator)

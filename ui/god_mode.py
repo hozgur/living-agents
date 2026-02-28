@@ -101,7 +101,9 @@ class GodModeScreen(Screen):
     def on_mount(self) -> None:
         self.refresh_world_status()
         self.refresh_agent_details()
+        self.refresh_stats()
         self.set_interval(5, self.refresh_world_status)
+        self.set_interval(5, self.refresh_stats)
         self.set_interval(10, self.refresh_agent_details)
         self.log_event("Debug Mode aktif", "green")
 
@@ -109,6 +111,14 @@ class GodModeScreen(Screen):
         try:
             self.query_one("#debug-world-status", WorldStatusWidget).update_status(
                 self.orchestrator.registry
+            )
+        except Exception:
+            pass
+
+    def refresh_stats(self) -> None:
+        try:
+            self.query_one("#debug-stats", StatsWidget).update_stats_sync(
+                self.orchestrator
             )
         except Exception:
             pass

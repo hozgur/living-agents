@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 import anthropic
 
 from config.settings import Settings
+from core.token_tracker import TokenTracker
 from memory.episodic import Episode
 from memory.semantic import KnowledgeFact
 
@@ -343,6 +344,7 @@ class ReflectionEngine:
                     max_tokens=1024,
                     messages=[{"role": "user", "content": prompt}],
                 )
+                TokenTracker().record(response.usage)
                 return response.content[0].text
 
             except anthropic.RateLimitError as e:

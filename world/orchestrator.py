@@ -18,6 +18,7 @@ import anthropic
 from config.settings import Settings
 from conversation.engine import ConversationEngine
 from conversation.reflection import ReflectionEngine
+from core.token_tracker import TokenTracker
 from core.agent import Agent
 from core.character import CharacterState
 from core.expertise import ExpertiseSystem
@@ -671,6 +672,7 @@ class Orchestrator:
                 max_tokens=50,
                 messages=[{"role": "user", "content": prompt}],
             )
+            TokenTracker().record(response.usage)
             decision = response.content[0].text.strip().lower()
             logger.info("[%s autonomy] Decision: %s", agent.identity.name, decision)
             return decision
@@ -703,6 +705,7 @@ class Orchestrator:
                             ),
                         }],
                     )
+                    TokenTracker().record(response.usage)
                     opening = response.content[0].text.strip()
                 except Exception:
                     opening = f"Merhaba {target_agent.identity.name}, nasılsın?"

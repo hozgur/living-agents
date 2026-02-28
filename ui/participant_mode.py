@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Footer, Header, Input, Static
+from textual.widgets import Header, Input, Static
 from textual.worker import Worker, WorkerState
 
 from ui.widgets import ConversationView, EventLogWidget, WorldStatusWidget
@@ -134,6 +134,13 @@ class ParticipantModeScreen(Screen):
     #part-input {
         dock: bottom;
     }
+    #part-statusbar {
+        dock: bottom;
+        height: 1;
+        background: $surface;
+        color: $text-muted;
+        padding: 0 1;
+    }
     #part-help {
         dock: bottom;
         height: auto;
@@ -178,11 +185,13 @@ class ParticipantModeScreen(Screen):
                     id="part-help",
                 )
                 yield Input(placeholder="@Genesis merhaba! veya /komut ...", id="part-input")
-        yield Footer()
+        yield Static("ESC Debug Mode | Q Quit | 🔢 API: 0 | In: 0 | Out: 0", id="part-statusbar")
 
     def on_mount(self) -> None:
         self.refresh_world_status()
+        self.refresh_token_display()
         self.set_interval(5, self.refresh_world_status)
+        self.set_interval(5, self.refresh_token_display)
 
         conv = self.query_one("#part-conversation", ConversationView)
         conv.add_system_message("Grup sohbete hoş geldiniz!")
@@ -753,6 +762,16 @@ class ParticipantModeScreen(Screen):
                 conv.add_system_message(
                     f"  Uzmanlık ({domain}): seviye={exp.level:.2f}, tutku={exp.passion:.2f}"
                 )
+
+    def refresh_token_display(self) -> None:
+        try:
+            from core.token_tracker import TokenTracker
+            tracker = TokenTracker()
+            self.query_one("#part-statusbar", Static).update(
+                f" ESC Debug Mode | Q Quit | 🔢 {tracker.summary()}"
+            )
+        except Exception:
+            pass
 
     def refresh_world_status(self) -> None:
         try:
