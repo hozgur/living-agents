@@ -48,12 +48,14 @@ class MemoryStore:
         # Episodic recall
         episodes = await self.episodic.recall(current_query, n=5)
         if episodes:
-            parts.append("### Hatırladığın Anılar")
+            parts.append("### Hatırladığın Anılar (bunlara referans ver!)")
             for ep in episodes:
                 parts.append(
-                    f"- [{ep.emotional_tone}] {ep.summary} "
-                    f"(önem: {ep.current_importance:.1f})"
+                    f"- [{ep.emotional_tone}] {ep.summary}"
                 )
+                if ep.key_facts:
+                    for fact in ep.key_facts[:3]:
+                        parts.append(f"  • {fact}")
 
         # Important persistent memories
         important = await self.episodic.get_important_memories(threshold=0.5)

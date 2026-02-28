@@ -64,7 +64,14 @@ class Orchestrator:
         # Load existing agents from database
         await self._load_agents()
 
+        # Run memory decay on startup (catches up for elapsed days)
+        await self._run_memory_maintenance()
+
         self._running = True
+
+        # Start periodic memory maintenance (every hour)
+        self._maintenance_task = asyncio.create_task(self._memory_maintenance_loop())
+
         logger.info(
             "Orchestrator started (%d agents loaded)",
             len(self.agents),
@@ -73,6 +80,10 @@ class Orchestrator:
     async def stop(self) -> None:
         """Graceful shutdown: end conversations, save state, cancel loops."""
         self._running = False
+
+        # Cancel maintenance task
+        if hasattr(self, '_maintenance_task'):
+            self._maintenance_task.cancel()
 
         # Cancel autonomy loops
         for task in self._autonomy_tasks.values():
@@ -720,6 +731,29 @@ class Orchestrator:
 
         else:
             logger.debug("[%s] Unknown autonomy decision: %s", agent.identity.name, decision)
+
+    async def _run_memory_maintenance(self) -> None:
+        """Run memory decay and cleanup for all agents."""
+        for agent in self.agents.values():
+            if agent.memory:
+                try:
+                    await agent.memory.daily_maintenance(
+                        decay_rate=self.settings.MEMORY_DECAY_RATE
+                    )
+                except Exception:
+                    logger.exception(
+                        "Memory maintenance failed for %s", agent.identity.name
+                    )
+        if self.agents:
+            logger.info("Memory maintenance completed for %d agents", len(self.agents))
+
+    async def _memory_maintenance_loop(self) -> None:
+        """Periodic memory maintenance (every hour)."""
+        while self._running:
+            await asyncio.sleep(3600)  # 1 hour
+            if not self._running:
+                break
+            await self._run_memory_maintenance()
 
     async def _load_agents(self) -> None:
         """Load agents from the database."""

@@ -32,14 +32,17 @@ REFLECTION_PROMPT = """Sen {agent_name} olarak az önce şu konuşmayı yaptın:
 
 {conversation_summary}
 
+Katılımcılar: {participants_info}
+
 Şimdi bu deneyimi değerlendir ve SADECE aşağıdaki JSON formatında yanıtla (başka metin ekleme):
 {{
   "episode": {{
-    "summary": "Bu konuşmadan ne hatırlamalısın? (Türkçe kısa özet)",
+    "summary": "KİM, NE söyledi ve SEN ne düşündün? Genel 'sohbet ettik' YAZMA. Spesifik ol: hangi konu konuşuldu, kim ne iddia etti, hangi fikir ilginçti, ne öğrendin? Bir sonraki konuşmada bunu okuyunca hatırlayabileceğin somut detaylar yaz.",
     "emotional_tone": "konuşmanın duygusal tonu (tek kelime)",
-    "key_facts": ["öğrenilen somut bilgiler"],
+    "key_facts": ["her biri somut ve spesifik bilgi: kişinin adı + ne söylediği/yaptığı"],
     "importance": 0.0-1.0,
-    "tags": ["ilgili etiketler"]
+    "tags": ["ilgili etiketler"],
+    "follow_up": "Bir sonraki konuşmada bu kişiyle ne hakkında konuşmalısın? Hangi konuyu derinleştirebilirsin?"
   }},
   "character_updates": {{
     "mood_changes": {{"energy": 0.0, "happiness": 0.0, "anxiety": 0.0, "focus": 0.0, "excitement": 0.0}},
@@ -48,17 +51,17 @@ REFLECTION_PROMPT = """Sen {agent_name} olarak az önce şu konuşmayı yaptın:
     "removed_beliefs": []
   }},
   "relationship_updates": {{
-    "entity_id_here": {{
+    "kişi_adı": {{
       "trust_delta": 0.0,
       "familiarity_delta": 0.0,
       "sentiment_delta": 0.0,
-      "new_notes": []
+      "new_notes": ["bu kişi hakkında öğrendiğin somut bir şey"]
     }}
   }},
   "new_knowledge": [
     {{"subject": "...", "predicate": "...", "object": "...", "confidence": 0.8}}
   ],
-  "self_reflection": "Kendi kendine düşüncen (loglarda görünür, prompt'a eklenmez)"
+  "self_reflection": "Bu konuşma seni nasıl etkiledi? Düşüncelerin değişti mi?"
 }}
 
 Kurallar:
@@ -66,7 +69,10 @@ Kurallar:
 - trait_nudges değerleri -0.02 ile +0.02 arasında olmalı (çok küçük!)
 - importance 0.0 ile 1.0 arasında olmalı
 - Tüm metin Türkçe olmalı
-- SADECE geçerli JSON döndür, başka bir şey yazma"""
+- SADECE geçerli JSON döndür, başka bir şey yazma
+- summary alanına ASLA "kısa bir sohbet yaptık" gibi genel ifadeler yazma. SOMUT detay ver.
+- relationship_updates anahtarları kişi ADLARI olmalı (örn: "Operator", "Luna", "Genesis")
+- key_facts listesinde her madde "Kim: ne" formatında olmalı (örn: "Luna: hakikatin katmanlı olduğunu savunuyor")"""
 
 
 class ReflectionEngine:
@@ -93,9 +99,15 @@ class ReflectionEngine:
         # Build conversation summary for reflection prompt
         conversation_summary = self._format_conversation(conversation_messages)
 
+        # Build participant info from conversation messages (they contain [Name]: tags)
+        participants_info = self._extract_participant_names(
+            conversation_messages, agent.identity.name
+        )
+
         prompt = REFLECTION_PROMPT.format(
             agent_name=agent.identity.name,
             conversation_summary=conversation_summary,
+            participants_info=participants_info,
         )
 
         # Call Claude for reflection
@@ -140,10 +152,14 @@ class ReflectionEngine:
 
         # 1. Save episode to episodic memory
         episode_data = reflection.get("episode", {})
+        summary = episode_data.get("summary", "Konuşma yapıldı")
+        follow_up = episode_data.get("follow_up", "")
+        if follow_up:
+            summary = f"{summary} [Sonraki sefere: {follow_up}]"
         episode = Episode(
             agent_id=agent.identity.agent_id,
             participants=participants,
-            summary=episode_data.get("summary", "Konuşma yapıldı"),
+            summary=summary,
             emotional_tone=episode_data.get("emotional_tone", "nötr"),
             key_facts=episode_data.get("key_facts", []),
             importance=self._clamp(episode_data.get("importance", 0.5), 0.0, 1.0),
@@ -180,9 +196,12 @@ class ReflectionEngine:
             if isinstance(belief, str) and belief:
                 agent.character.remove_belief(belief)
 
-        # 3. Apply relationship updates
+        # 3. Apply relationship updates (keyed by name, e.g. "Luna", "Operator")
         rel_updates = reflection.get("relationship_updates", {})
         for entity_id, updates in rel_updates.items():
+            # Skip placeholder keys from the template
+            if entity_id in ("entity_id_here", "kişi_adı"):
+                continue
             if not isinstance(updates, dict):
                 continue
             rel_changes = {}
@@ -237,6 +256,21 @@ class ReflectionEngine:
                 agent.identity.name,
                 self_reflection,
             )
+
+    @staticmethod
+    def _extract_participant_names(
+        messages: list[dict[str, str]], agent_name: str
+    ) -> str:
+        """Extract participant names from tagged messages like '[Name]: ...'."""
+        import re
+        names = {agent_name}
+        tag_pattern = re.compile(r"^\[([^\]]+)\]:")
+        for msg in messages:
+            if msg["role"] == "user":
+                match = tag_pattern.match(msg["content"])
+                if match:
+                    names.add(match.group(1))
+        return ", ".join(sorted(names))
 
     async def _call_claude(self, prompt: str) -> str | None:
         """Call Claude for reflection with exponential backoff."""

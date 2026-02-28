@@ -608,13 +608,27 @@ class ParticipantModeScreen(Screen):
             if agent is None or agent.memory is None:
                 conv.add_system_message("Agent bulunamadı veya hafızası yok.")
                 return
-            episodes = await agent.memory.episodic.get_important_memories(threshold=0.3)
-            if not episodes:
-                conv.add_system_message(f"{agent.identity.name} henüz anıya sahip değil.")
-            else:
-                for ep in episodes[:5]:
+            # Show stats
+            all_episodes = await agent.memory.episodic.get_important_memories(threshold=0.0)
+            important = [ep for ep in all_episodes if ep.current_importance >= 0.5]
+            conv.add_system_message(
+                f"--- {agent.identity.name} Hafızası: "
+                f"{len(all_episodes)} anı ({len(important)} önemli) ---"
+            )
+            # Show top 10 by importance
+            for ep in all_episodes[:10]:
+                conv.add_system_message(
+                    f"  [{ep.emotional_tone}] (önem: {ep.current_importance:.2f}) "
+                    f"{ep.summary[:120]}"
+                )
+            if len(all_episodes) > 10:
+                conv.add_system_message(f"  ... ve {len(all_episodes) - 10} anı daha")
+            # Show relationship info
+            if agent.character.relationships:
+                conv.add_system_message("  İlişkiler:")
+                for eid, rel in agent.character.relationships.items():
                     conv.add_system_message(
-                        f"  [{ep.emotional_tone}] {ep.summary[:80]}... (önem: {ep.current_importance:.1f})"
+                        f"    {eid}: güven={rel.trust:.2f}, aşinalık={rel.familiarity:.2f}"
                     )
 
         elif cmd == "/inspect":
