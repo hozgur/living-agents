@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     DB_PATH: str = "data/agents.db"
     CHROMA_PATH: str = "data/chroma"
     AUTONOMY_INTERVAL: int = 60
-    REFLECTION_THRESHOLD: int = 5
+    REFLECTION_THRESHOLD: int = 3
     MEMORY_DECAY_RATE: float = 0.01
     EMBEDDING_MODEL: str = "default"
 

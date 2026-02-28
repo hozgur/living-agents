@@ -56,7 +56,7 @@ class MemoryStore:
                 )
 
         # Important persistent memories
-        important = await self.episodic.get_important_memories(threshold=0.7)
+        important = await self.episodic.get_important_memories(threshold=0.5)
         # Deduplicate with already-recalled episodes
         recalled_ids = {ep.episode_id for ep in episodes}
         important = [ep for ep in important if ep.episode_id not in recalled_ids]

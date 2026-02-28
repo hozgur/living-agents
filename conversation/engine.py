@@ -77,6 +77,7 @@ class ConversationEngine:
         # Conversation tracking
         self.conversation_id: str = str(uuid4())
         self.turn_count: int = 0
+        self._last_reflection_turn: int = 0
         self.participants: set[str] = set()
 
         # Token limits: shorter for agent-to-agent, longer for human conversations
@@ -145,12 +146,14 @@ class ConversationEngine:
             and self.turn_count % self.settings.REFLECTION_THRESHOLD == 0
         ):
             await self._trigger_reflection()
+            self._last_reflection_turn = self.turn_count
 
         return response_text
 
     async def end_conversation(self) -> None:
         """End the current conversation and trigger final reflection."""
-        if self.reflection_engine is not None and self.turn_count > 0:
+        has_unreflected = self.turn_count > self._last_reflection_turn
+        if self.reflection_engine is not None and has_unreflected:
             await self._trigger_reflection()
 
         # Store conversation record
@@ -185,6 +188,7 @@ class ConversationEngine:
             self.agent.memory.working.clear()
         self.conversation_id = str(uuid4())
         self.turn_count = 0
+        self._last_reflection_turn = 0
         self.participants.clear()
 
     def _get_agent_ids(self) -> set[str]:

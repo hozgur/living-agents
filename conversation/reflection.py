@@ -305,11 +305,18 @@ class ReflectionEngine:
 
     @staticmethod
     def _format_conversation(messages: list[dict[str, str]]) -> str:
-        """Format conversation messages as readable text for the reflection prompt."""
+        """Format conversation messages as readable text for the reflection prompt.
+
+        User messages may contain sender tags like '[Operator]: ...' or
+        '[AgentName]: ...' — preserve these so the reflection knows WHO spoke.
+        """
         lines = []
         for msg in messages:
-            role = "Kullanıcı" if msg["role"] == "user" else "Sen"
-            lines.append(f"{role}: {msg['content']}")
+            if msg["role"] == "assistant":
+                lines.append(f"Sen: {msg['content']}")
+            else:
+                # User messages already tagged as [SenderName]: ... — use as-is
+                lines.append(msg["content"])
         return "\n".join(lines)
 
     @staticmethod

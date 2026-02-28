@@ -311,7 +311,9 @@ class Orchestrator:
             f"1. KISA KONUŞ — her mesajın EN FAZLA 1-2 cümle olsun.\n"
             f"2. Bu sohbet en fazla {max_turns} tur sürecek. Uzatma, hızlıca konuyu kapat.\n"
             f"3. Söyleyeceğini söyle, vedalaş, mesajının sonuna {self.CONVERSATION_END_SIGNAL} ekle.\n"
-            f"4. Her turda kenine sor: 'Söyleyecek yeni bir şey var mı?' Yoksa HEMEN bitir.]"
+            f"4. Her turda kenine sor: 'Söyleyecek yeni bir şey var mı?' Yoksa HEMEN bitir.\n"
+            f"5. 'Nasılsın' tarzı klişe selamlaşma YASAK. Doğrudan konuya gir, "
+            f"ilginç bir şey söyle, fikir paylaş veya soru sor.]"
         )
         engine1.agent.memory.working.add_message("user", end_instruction)
         engine1.agent.memory.working.add_message("assistant", "Anladım, kısa konuşacağım.")
