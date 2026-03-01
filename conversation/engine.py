@@ -35,20 +35,20 @@ AGENT_TOOLS = [
     {
         "name": "talk_to_agent",
         "description": (
-            "Başka bir agent ile konuşma başlat. "
-            "Bu tool'u kullanıcı senden başka bir agent'la konuşmanı, "
-            "ona bir şey sormanı veya mesaj iletmeni istediğinde kullan."
+            "Start a conversation with another agent. "
+            "Use this tool when the user asks you to talk to another agent, "
+            "ask them something, or relay a message."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "agent_name": {
                     "type": "string",
-                    "description": "Konuşmak istediğin agent'ın adı",
+                    "description": "The name of the agent you want to talk to",
                 },
                 "message": {
                     "type": "string",
-                    "description": "Agent'a göndermek istediğin mesaj",
+                    "description": "The message you want to send to the agent",
                 },
             },
             "required": ["agent_name", "message"],
@@ -124,6 +124,7 @@ class ConversationEngine:
             self.agent,
             memory_context=memory_context,
             world_summary=world_summary,
+            language=self.settings.CHAT_LANGUAGE,
         )
         messages = build_messages(memory.working)
 
@@ -354,7 +355,7 @@ class ConversationEngine:
     async def _execute_talk_to_agent(self, agent_name: str, message: str) -> str:
         """Execute the talk_to_agent tool — triggers real agent conversation."""
         if self._talk_to_agent_fn is None:
-            return "Konuşma başlatılamadı: sistem bağlantısı yok."
+            return "Could not start conversation: no system connection."
 
         try:
             result = await self._talk_to_agent_fn(
@@ -365,7 +366,7 @@ class ConversationEngine:
             return result
         except Exception as e:
             logger.exception("talk_to_agent failed")
-            return f"Konuşma başlatılamadı: {e}"
+            return f"Could not start conversation: {e}"
 
     async def _compress_context(self) -> None:
         """Compress working memory if approaching token limit."""

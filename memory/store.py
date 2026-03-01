@@ -38,17 +38,17 @@ class MemoryStore:
         logger.info("MemoryStore initialized for agent %s", self.agent_id)
 
     async def build_memory_context(self, current_query: str) -> str:
-        """Build the 'Hafızan' section for the system prompt.
+        """Build the 'Memory' section for the system prompt.
 
         Recalls relevant episodic memories and semantic facts,
-        combines them into Turkish text.
+        combines them into text for the system prompt.
         """
         parts = []
 
         # Episodic recall
         episodes = await self.episodic.recall(current_query, n=5)
         if episodes:
-            parts.append("### Hatırladığın Anılar (bunlara referans ver!)")
+            parts.append("### Memories You Recall (reference these!)")
             for ep in episodes:
                 parts.append(
                     f"- [{ep.emotional_tone}] {ep.summary}"
@@ -63,7 +63,7 @@ class MemoryStore:
         recalled_ids = {ep.episode_id for ep in episodes}
         important = [ep for ep in important if ep.episode_id not in recalled_ids]
         if important:
-            parts.append("### Önemli Anılar")
+            parts.append("### Important Memories")
             for ep in important[:3]:
                 parts.append(f"- {ep.summary}")
 
@@ -80,7 +80,7 @@ class MemoryStore:
                         seen_fact_ids.add(fact.fact_id)
 
         if all_facts:
-            parts.append("### Bildiğin Gerçekler")
+            parts.append("### Facts You Know")
             parts.append(SemanticMemory.to_prompt_summary(all_facts))
 
         return "\n".join(parts) if parts else ""

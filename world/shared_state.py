@@ -1,6 +1,6 @@
 """SharedWorldState — shared facts and events accessible to all agents.
 
-Persists world facts and events to SQLite. Provides a Turkish summary
+Persists world facts and events to SQLite. Provides a summary
 of recent world activity.
 """
 
@@ -119,27 +119,27 @@ class SharedWorldState:
             return [self._row_to_fact(row) for row in rows]
 
     async def to_summary(self, max_events: int = 10) -> str:
-        """Generate a Turkish natural-language summary of world state."""
+        """Generate a natural-language summary of world state."""
         parts = []
 
         # Recent events
         events = await self.get_recent_events(n=max_events)
         if events:
-            parts.append("### Son Olaylar")
+            parts.append("### Recent Events")
             for ev in events:
-                type_label = _event_type_to_turkish(ev.event_type)
+                type_label = _event_type_to_english(ev.event_type)
                 parts.append(f"- [{type_label}] {ev.event}")
 
         # World facts
         facts = await self.get_facts()
         if facts:
-            parts.append("### Dünya Gerçekleri")
+            parts.append("### World Facts")
             for wf in facts:
                 confirmations = len(wf.confirmed_by)
-                confirm_str = f" ({confirmations} doğrulama)" if confirmations > 0 else ""
+                confirm_str = f" ({confirmations} confirmations)" if confirmations > 0 else ""
                 parts.append(f"- {wf.fact}{confirm_str}")
 
-        return "\n".join(parts) if parts else "(Henüz dünya olayı yok)"
+        return "\n".join(parts) if parts else "(No world events yet)"
 
     @staticmethod
     def _row_to_event(row) -> WorldEvent:
@@ -162,12 +162,12 @@ class SharedWorldState:
         )
 
 
-def _event_type_to_turkish(event_type: str) -> str:
+def _event_type_to_english(event_type: str) -> str:
     return {
-        "creation": "yaratılış",
-        "conversation": "konuşma",
-        "discovery": "keşif",
-        "mood_change": "ruh hali",
-        "relationship_change": "ilişki",
-        "general": "genel",
+        "creation": "creation",
+        "conversation": "conversation",
+        "discovery": "discovery",
+        "mood_change": "mood",
+        "relationship_change": "relationship",
+        "general": "general",
     }.get(event_type, event_type)

@@ -20,8 +20,9 @@ def build_system_prompt(
     agent: Agent,
     memory_context: str = "",
     world_summary: str = "",
+    language: str = "English",
 ) -> str:
-    """Build the full Turkish system prompt for a Claude API call.
+    """Build the full system prompt for a Claude API call.
 
     Delegates to Agent.get_system_prompt() which already assembles
     identity, character, expertise, memory, world state, and behavior rules.
@@ -29,6 +30,7 @@ def build_system_prompt(
     return agent.get_system_prompt(
         memory_context=memory_context,
         world_summary=world_summary,
+        language=language,
     )
 
 
@@ -47,13 +49,13 @@ def build_messages(working_memory: WorkingMemory) -> list[dict[str, str]]:
         messages.append({
             "role": "user",
             "content": (
-                f"[Önceki konuşmanın özeti: {context['summary']}]\n\n"
-                "Lütfen bu bağlamı dikkate alarak devam et."
+                f"[Summary of previous conversation: {context['summary']}]\n\n"
+                "Please continue taking this context into account."
             ),
         })
         messages.append({
             "role": "assistant",
-            "content": "Anladım, önceki konuşmamızı hatırlıyorum. Devam edelim.",
+            "content": "Understood, I remember our previous conversation. Let's continue.",
         })
 
     # Add actual conversation messages

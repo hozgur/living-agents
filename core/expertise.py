@@ -43,45 +43,45 @@ class ExpertiseSystem(BaseModel):
         # Phase 4: query world_registry for agents with higher expertise in domain
         return None
 
-    def to_prompt_description(self) -> str:
-        """Generate Turkish natural language description for system prompt."""
+    def to_prompt_description(self, language: str = "English") -> str:
+        """Generate natural language description for system prompt."""
         if not self.domains:
-            return "Henüz belirli bir uzmanlık alanın yok, öğrenmeye açıksın."
+            return "You don't have a specific area of expertise yet, but you're open to learning."
 
         lines = []
         style_labels = {
-            "socratic": "sokratik sorgulama",
-            "analytical": "analitik yaklaşım",
-            "creative": "yaratıcı düşünme",
-            "intuitive": "sezgisel kavrayış",
-            "empathetic": "empatik anlayış",
-            "cautious_learner": "temkinli öğrenme",
-            "step_by_step": "adım adım açıklama",
-            "metaphor_heavy": "metafor ağırlıklı anlatım",
-            "example_driven": "örnek odaklı öğretim",
+            "socratic": "Socratic questioning",
+            "analytical": "analytical approach",
+            "creative": "creative thinking",
+            "intuitive": "intuitive grasp",
+            "empathetic": "empathetic understanding",
+            "cautious_learner": "cautious learning",
+            "step_by_step": "step-by-step explanation",
+            "metaphor_heavy": "metaphor-heavy narration",
+            "example_driven": "example-driven teaching",
         }
 
         for domain, expertise in self.domains.items():
             level_desc = (
-                "uzman" if expertise.level >= 0.8
-                else "ileri düzey" if expertise.level >= 0.6
-                else "orta düzey" if expertise.level >= 0.4
-                else "başlangıç düzeyi" if expertise.level >= 0.2
-                else "yeni başlayan"
+                "expert" if expertise.level >= 0.8
+                else "advanced" if expertise.level >= 0.6
+                else "intermediate" if expertise.level >= 0.4
+                else "beginner" if expertise.level >= 0.2
+                else "novice"
             )
             passion_desc = (
-                "tutkuyla bağlı olduğun" if expertise.passion >= 0.8
-                else "ilgilendiğin" if expertise.passion >= 0.5
-                else "tanıdığın"
+                "passionately devoted to" if expertise.passion >= 0.8
+                else "interested in" if expertise.passion >= 0.5
+                else "familiar with"
             )
             style_desc = style_labels.get(expertise.style, expertise.style)
             lines.append(
-                f"- {domain.capitalize()}: {level_desc} seviyede, {passion_desc} bir alan. "
-                f"Yaklaşımın: {style_desc}."
+                f"- {domain.capitalize()}: {level_desc} level, a field you are {passion_desc}. "
+                f"Your approach: {style_desc}."
             )
 
         teaching_desc = style_labels.get(self.teaching_style, self.teaching_style)
-        lines.append(f"\nÖğretme tarzın: {teaching_desc}.")
+        lines.append(f"\nTeaching style: {teaching_desc}.")
 
         return "\n".join(lines)
 

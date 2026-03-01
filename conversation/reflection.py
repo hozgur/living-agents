@@ -28,63 +28,64 @@ logger = logging.getLogger(__name__)
 MAX_RETRIES = 3
 BASE_DELAY = 1.0
 
-# The reflection prompt template (Turkish)
-REFLECTION_PROMPT = """Sen {agent_name} olarak az önce şu konuşmayı yaptın:
+# The reflection prompt template — English structure, {language} for text output
+REFLECTION_PROMPT = """As {agent_name}, you just had this conversation:
 
 {conversation_summary}
 
-Katılımcılar: {participants_info}
-Mevcut inançların: {current_beliefs}
+Participants: {participants_info}
+Your current beliefs: {current_beliefs}
 
-Şimdi bu deneyimi değerlendir ve SADECE aşağıdaki JSON formatında yanıtla (başka metin ekleme):
+Now evaluate this experience and respond ONLY in the following JSON format (add no other text).
+Write all text fields in {language}.
 {{
   "episode": {{
-    "summary": "KİM, NE söyledi ve SEN ne düşündün? Genel 'sohbet ettik' YAZMA. Spesifik ol: hangi konu konuşuldu, kim ne iddia etti, hangi fikir ilginçti, ne öğrendin? Bir sonraki konuşmada bunu okuyunca hatırlayabileceğin somut detaylar yaz.",
-    "emotional_tone": "konuşmanın duygusal tonu (tek kelime)",
-    "key_facts": ["her biri somut ve spesifik bilgi: kişinin adı + ne söylediği/yaptığı"],
+    "summary": "WHO said WHAT and what did YOU think? Do NOT write generic summaries like 'we had a chat'. Be specific: what topic was discussed, who claimed what, which idea was interesting, what did you learn? Write concrete details you can recall in the next conversation.",
+    "emotional_tone": "emotional tone of the conversation (single word)",
+    "key_facts": ["each one a concrete and specific piece of info: person's name + what they said/did"],
     "importance": 0.0-1.0,
-    "tags": ["ilgili etiketler"],
-    "follow_up": "Bir sonraki konuşmada bu kişiyle ne hakkında konuşmalısın? Hangi konuyu derinleştirebilirsin?"
+    "tags": ["relevant tags"],
+    "follow_up": "What should you talk about with this person next time? Which topic could you explore deeper?"
   }},
   "character_updates": {{
     "mood_changes": {{"energy": 0.0, "happiness": 0.0, "anxiety": 0.0, "focus": 0.0, "excitement": 0.0}},
     "trait_nudges": {{}},
-    "new_beliefs": ["bu konuşmadan doğan yeni bir inanç varsa"],
-    "removed_beliefs": ["artık inanmadığın bir şey varsa"],
+    "new_beliefs": ["a new belief born from this conversation, if any"],
+    "removed_beliefs": ["something you no longer believe, if any"],
     "belief_evolutions": {{
-      "mevcut inanç metni": 0.05,
-      "başka bir inanç": -0.05
+      "existing belief text": 0.05,
+      "another belief": -0.05
     }},
     "belief_transformations": {{
-      "eski inanç metni": "bu inancın evrilmiş yeni hali"
+      "old belief text": "the evolved new version of this belief"
     }}
   }},
   "relationship_updates": {{
-    "kişi_adı": {{
+    "person_name": {{
       "trust_delta": 0.0,
       "familiarity_delta": 0.0,
       "sentiment_delta": 0.0,
-      "new_notes": ["bu kişi hakkında öğrendiğin somut bir şey"]
+      "new_notes": ["a concrete thing you learned about this person"]
     }}
   }},
   "new_knowledge": [
     {{"subject": "...", "predicate": "...", "object": "...", "confidence": 0.8}}
   ],
-  "self_reflection": "Bu konuşma seni nasıl etkiledi? Düşüncelerin değişti mi?"
+  "self_reflection": "How did this conversation affect you? Did your thoughts change?"
 }}
 
-Kurallar:
-- mood_changes değerleri -0.2 ile +0.2 arasında olmalı
-- trait_nudges değerleri -0.02 ile +0.02 arasında olmalı (çok küçük!)
-- importance 0.0 ile 1.0 arasında olmalı
-- Tüm metin Türkçe olmalı
-- SADECE geçerli JSON döndür, başka bir şey yazma
-- summary alanına ASLA "kısa bir sohbet yaptık" gibi genel ifadeler yazma. SOMUT detay ver.
-- relationship_updates anahtarları kişi ADLARI olmalı (örn: "Operator", "Luna", "Genesis")
-- key_facts listesinde her madde "Kim: ne" formatında olmalı (örn: "Luna: hakikatin katmanlı olduğunu savunuyor")
-- İNANÇ EVRİMİ: Mevcut inançlarına bak. Bu konuşma bir inancını güçlendirdi mi (+0.05), zayıflattı mı (-0.05)?
-  Bir inanç dönüştüyse belief_transformations'a yaz (örn: "dünya adil değil" → "dünya adil değil ama değiştirilebilir").
-  belief_evolutions ve belief_transformations boş olabilir ama her reflection'da inançlarını gözden geçir."""
+Rules:
+- mood_changes values must be between -0.2 and +0.2
+- trait_nudges values must be between -0.02 and +0.02 (very small!)
+- importance must be between 0.0 and 1.0
+- All text MUST be in {language}
+- Return ONLY valid JSON, nothing else
+- NEVER write generic phrases like "we had a brief chat" in the summary. Give CONCRETE details.
+- relationship_updates keys must be person NAMES (e.g., "Operator", "Luna", "Genesis")
+- Each item in key_facts must follow "Who: what" format (e.g., "Luna: argues that truth is layered")
+- BELIEF EVOLUTION: Look at your current beliefs. Did this conversation strengthen one (+0.05) or weaken one (-0.05)?
+  If a belief transformed, write it in belief_transformations.
+  belief_evolutions and belief_transformations can be empty but review your beliefs every reflection."""
 
 
 class ReflectionEngine:
@@ -119,10 +120,10 @@ class ReflectionEngine:
         )
 
         # Format current beliefs for the prompt
-        current_beliefs = "yok"
+        current_beliefs = "none"
         if agent.character.beliefs:
             current_beliefs = "; ".join(
-                f"'{b.text}' (güç: {b.conviction:.1f})"
+                f"'{b.text}' (strength: {b.conviction:.1f})"
                 for b in agent.character.beliefs
             )
 
@@ -131,6 +132,7 @@ class ReflectionEngine:
             conversation_summary=conversation_summary,
             participants_info=participants_info,
             current_beliefs=current_beliefs,
+            language=self.settings.CHAT_LANGUAGE,
         )
 
         # Call Claude for reflection
@@ -187,15 +189,15 @@ class ReflectionEngine:
 
         # 1. Save episode to episodic memory
         episode_data = reflection.get("episode", {})
-        summary = episode_data.get("summary", "Konuşma yapıldı")
+        summary = episode_data.get("summary", "Conversation held")
         follow_up = episode_data.get("follow_up", "")
         if follow_up:
-            summary = f"{summary} [Sonraki sefere: {follow_up}]"
+            summary = f"{summary} [Next time: {follow_up}]"
         episode = Episode(
             agent_id=agent.identity.agent_id,
             participants=participants,
             summary=summary,
-            emotional_tone=episode_data.get("emotional_tone", "nötr"),
+            emotional_tone=episode_data.get("emotional_tone", "neutral"),
             key_facts=episode_data.get("key_facts", []),
             importance=self._clamp(episode_data.get("importance", 0.5), 0.0, 1.0),
             current_importance=self._clamp(episode_data.get("importance", 0.5), 0.0, 1.0),
@@ -203,7 +205,7 @@ class ReflectionEngine:
             conversation_id=conversation_id,
         )
         await memory.save_episode(episode)
-        await self._emit(name, f"💾 Yeni anı: {summary[:80]}", "memory")
+        await self._emit(name, f"💾 New memory: {summary[:80]}", "memory")
 
         # 2. Apply character updates
         char_updates = reflection.get("character_updates", {})
@@ -228,19 +230,19 @@ class ReflectionEngine:
         for belief in char_updates.get("new_beliefs", []):
             if isinstance(belief, str) and belief:
                 agent.character.add_belief(belief)
-                await self._emit(name, f"🌱 Yeni inanç: \"{belief}\"", "belief")
+                await self._emit(name, f"🌱 New belief: \"{belief}\"", "belief")
         for belief in char_updates.get("removed_beliefs", []):
             if isinstance(belief, str) and belief:
                 agent.character.remove_belief(belief)
-                await self._emit(name, f"❌ İnanç bırakıldı: \"{belief}\"", "belief")
+                await self._emit(name, f"❌ Belief dropped: \"{belief}\"", "belief")
 
         # Belief evolutions — strengthen or weaken existing beliefs
         for belief_text, delta in char_updates.get("belief_evolutions", {}).items():
             if isinstance(delta, (int, float)) and isinstance(belief_text, str):
                 agent.character.evolve_belief(belief_text, delta)
-                direction = "güçlendi 📈" if delta > 0 else "zayıfladı 📉"
+                direction = "strengthened 📈" if delta > 0 else "weakened 📉"
                 await self._emit(
-                    name, f"💭 İnanç {direction}: \"{belief_text}\" ({delta:+.2f})", "belief"
+                    name, f"💭 Belief {direction}: \"{belief_text}\" ({delta:+.2f})", "belief"
                 )
 
         # Belief transformations — old belief becomes new belief
@@ -248,7 +250,7 @@ class ReflectionEngine:
             if isinstance(old_text, str) and isinstance(new_text, str) and new_text:
                 agent.character.transform_belief(old_text, new_text)
                 await self._emit(
-                    name, f"🔄 İnanç dönüştü: \"{old_text}\" → \"{new_text}\"", "belief"
+                    name, f"🔄 Belief transformed: \"{old_text}\" → \"{new_text}\"", "belief"
                 )
 
         # 3. Apply relationship updates (keyed by name, e.g. "Luna", "Operator")
@@ -285,7 +287,7 @@ class ReflectionEngine:
             if rel_changes:
                 agent.character.update_relationship(entity_id, rel_changes)
                 await self._emit(
-                    name, f"🤝 {entity_id} ilişkisi güncellendi", "relationship"
+                    name, f"🤝 Relationship with {entity_id} updated", "relationship"
                 )
 
         # 4. Save new knowledge facts
@@ -306,14 +308,14 @@ class ReflectionEngine:
                 )
                 await memory.save_fact(fact)
                 await self._emit(
-                    name, f"📚 Öğrendi: {subject} → {predicate} → {obj}", "knowledge"
+                    name, f"📚 Learned: {subject} → {predicate} → {obj}", "knowledge"
                 )
 
         # 5. Log self-reflection
         self_reflection = reflection.get("self_reflection", "")
         if self_reflection:
             logger.info(
-                "[%s iç düşünce] %s",
+                "[%s inner thought] %s",
                 agent.identity.name,
                 self_reflection,
             )
@@ -424,12 +426,12 @@ class ReflectionEngine:
         # Create a basic summary from the last few messages
         recent = messages[-3:] if len(messages) > 3 else messages
         summary_parts = [msg["content"][:100] for msg in recent]
-        summary = "Konuşma yapıldı: " + " | ".join(summary_parts)
+        summary = "Conversation held: " + " | ".join(summary_parts)
 
         return {
             "episode": {
                 "summary": summary[:300],
-                "emotional_tone": "nötr",
+                "emotional_tone": "neutral",
                 "key_facts": [],
                 "importance": 0.3,
                 "tags": [],
@@ -442,7 +444,7 @@ class ReflectionEngine:
             },
             "relationship_updates": {},
             "new_knowledge": [],
-            "self_reflection": "Reflection JSON parse edilemedi, fallback kullanıldı.",
+            "self_reflection": "Reflection JSON could not be parsed, fallback used.",
         }
 
     @staticmethod

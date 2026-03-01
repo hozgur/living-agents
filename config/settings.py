@@ -8,11 +8,14 @@ class Settings(BaseSettings):
     MODEL_NAME: str = "claude-sonnet-4-20250514"
 
     # Task-based model overrides (fall back to MODEL_NAME if not set)
-    MODEL_CHAT: str = "claude-sonnet-4-20250514"        # Sohbet
+    MODEL_CHAT: str = "claude-sonnet-4-20250514"        # Chat
     MODEL_REFLECTION: str = "claude-haiku-4-5-20251001"  # Reflection
-    MODEL_AUTONOMY: str = "claude-haiku-4-5-20251001"    # Otonom karar
-    MODEL_CREATION: str = "claude-sonnet-4-20250514"     # Agent oluşturma
-    MODEL_COMPRESSION: str = "claude-haiku-4-5-20251001" # Context sıkıştırma
+    MODEL_AUTONOMY: str = "claude-haiku-4-5-20251001"    # Autonomy decisions
+    MODEL_CREATION: str = "claude-sonnet-4-20250514"     # Agent creation
+    MODEL_COMPRESSION: str = "claude-haiku-4-5-20251001" # Context compression
+
+    # Language agents use when speaking (configurable via /language command)
+    CHAT_LANGUAGE: str = "English"
 
     MAX_CONTEXT_TOKENS: int = 8000
     DB_PATH: str = "data/agents.db"

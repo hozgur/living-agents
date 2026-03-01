@@ -1,6 +1,6 @@
 """WorldRegistry — tracks all entities (agents and humans) in the world.
 
-Singleton pattern. Provides perspective-based world summaries in Turkish.
+Singleton pattern. Provides perspective-based world summaries.
 """
 
 from __future__ import annotations
@@ -105,44 +105,44 @@ class WorldRegistry:
         return [e for e in self._entities.values() if e.status != "offline"]
 
     def generate_world_summary(self, perspective_of: str = "") -> str:
-        """Generate a Turkish natural-language world summary.
+        """Generate a natural-language world summary.
 
-        The perspective entity sees itself as 'sen', others by name.
+        The perspective entity sees itself as 'you', others by name.
         """
         if not self._entities:
-            return "(Dünyada henüz kimse yok)"
+            return "(Nobody in the world yet)"
 
         parts = []
         entity_descriptions = []
 
         for entity in self._entities.values():
             if entity.entity_id == perspective_of:
-                name = "sen"
+                name = "you"
             else:
                 name = f"{entity.avatar_emoji} {entity.name}"
 
-            status_desc = _status_to_turkish(entity.status)
+            status_desc = _status_to_english(entity.status)
 
             if entity.current_conversation_with:
                 partner = self._entities.get(entity.current_conversation_with)
                 partner_name = partner.name if partner else entity.current_conversation_with
                 if entity.entity_id == perspective_of:
-                    status_desc = f"{partner_name} ile konuşuyorsun"
+                    status_desc = f"talking to {partner_name}"
                 else:
-                    status_desc = f"{partner_name} ile konuşuyor"
+                    status_desc = f"talking to {partner_name}"
 
             entity_descriptions.append(f"{name} ({status_desc})")
 
         entity_list = ", ".join(entity_descriptions)
-        parts.append(f"Dünyada şu anda: {entity_list}.")
+        parts.append(f"Currently in the world: {entity_list}.")
 
         # Count by type
         agent_count = len(self.get_agents())
         human_count = len(self.get_humans())
         online_count = len(self.get_online())
         parts.append(
-            f"Toplam {agent_count} agent ve {human_count} insan var. "
-            f"{online_count} varlık aktif."
+            f"Total {agent_count} agents and {human_count} humans. "
+            f"{online_count} entities active."
         )
 
         return "\n".join(parts)
@@ -159,13 +159,13 @@ class WorldRegistry:
         ]
 
 
-def _status_to_turkish(status: str) -> str:
-    """Convert entity status to Turkish description."""
+def _status_to_english(status: str) -> str:
+    """Convert entity status to English description."""
     return {
-        "online": "çevrimiçi",
-        "offline": "çevrimdışı",
-        "idle": "boşta",
-        "thinking": "düşünüyor",
-        "in_conversation": "konuşmada",
-        "reflecting": "düşünceye dalmış",
+        "online": "online",
+        "offline": "offline",
+        "idle": "idle",
+        "thinking": "thinking",
+        "in_conversation": "in conversation",
+        "reflecting": "reflecting",
     }.get(status, status)

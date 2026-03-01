@@ -45,7 +45,7 @@ class WorldStatusWidget(Static):
         """Refresh from WorldRegistry."""
         entities = registry.get_all()
         if not entities:
-            self.status_text = "(Henuz kimse yok)"
+            self.status_text = "(Nobody here yet)"
             return
 
         lines = []
@@ -134,8 +134,8 @@ class ConversationView(RichLog):
 
     def add_reflection(self, agent_name: str, reflection: str) -> None:
         now = datetime.now(timezone.utc).strftime("%H:%M")
-        self.write(f"[dim]{now}[/] [magenta italic]💭 {agent_name} düşünüyor: {reflection}[/]")
-        self._log_to_file(f"{now} 💭 {agent_name} düşünüyor: {reflection}")
+        self.write(f"[dim]{now}[/] [magenta italic]💭 {agent_name} thinking: {reflection}[/]")
+        self._log_to_file(f"{now} 💭 {agent_name} thinking: {reflection}")
 
 
 class StatsWidget(Static):
@@ -164,7 +164,7 @@ class StatsWidget(Static):
             f"API: {tracker.api_calls} calls\n"
             f"In: {tracker._fmt(tracker.input_tokens)}\n"
             f"Out: {tracker._fmt(tracker.output_tokens)}\n"
-            f"Toplam: {tracker._fmt(tracker.total_tokens)}"
+            f"Total: {tracker._fmt(tracker.total_tokens)}"
         )
 
     async def update_stats(self, orchestrator) -> None:

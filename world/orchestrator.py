@@ -123,7 +123,7 @@ class Orchestrator:
         agent_id = str(uuid4())
         identity = AgentIdentity(
             agent_id=agent_id,
-            name=config.get("name", "Isimsiz"),
+            name=config.get("name", "Unnamed"),
             created_by=created_by,
             personality_summary=config.get("personality_summary", ""),
             avatar_emoji=config.get("avatar_emoji", "\U0001f916"),
@@ -181,7 +181,7 @@ class Orchestrator:
         await self._save_agent(agent)
 
         # Record creation event
-        event_text = f"{identity.name} yaratıldı (yaratıcı: {created_by})"
+        event_text = f"{identity.name} was created (by: {created_by})"
         await self.shared_state.add_event(WorldEvent(
             event=event_text,
             participants=[agent_id, created_by],
@@ -191,14 +191,14 @@ class Orchestrator:
 
         # Notify others
         notify_ids = self.registry.notify_all(
-            f"{identity.name} dünyaya katıldı!", exclude=agent_id,
+            f"{identity.name} has joined the world!", exclude=agent_id,
         )
         for eid in notify_ids:
             await self.message_bus.send(Message(
                 from_id="system",
                 to_id=eid,
                 message_type="notification",
-                content=f"{identity.name} dünyaya katıldı!",
+                content=f"{identity.name} has joined the world!",
             ))
 
         # Create "first awakening" memory
@@ -206,12 +206,12 @@ class Orchestrator:
         awakening = Episode(
             agent_id=agent_id,
             participants=[agent_id],
-            summary=f"Ben {identity.name}, ilk kez uyanıyorum. {identity.personality_summary}",
-            emotional_tone="heyecan",
-            key_facts=[f"Yaratıcım: {created_by}", f"Adım: {identity.name}"],
+            summary=f"I am {identity.name}, awakening for the first time. {identity.personality_summary}",
+            emotional_tone="excitement",
+            key_facts=[f"My creator: {created_by}", f"My name: {identity.name}"],
             importance=0.9,
             current_importance=0.9,
-            tags=["yaratılış", "ilk_anı"],
+            tags=["creation", "first_memory"],
         )
         await memory.save_episode(awakening)
 
@@ -321,19 +321,19 @@ class Orchestrator:
 
         # Inject conversation rules into working memory context
         end_instruction = (
-            f"[Sistem notu: {agent1.identity.name} ile {agent2.identity.name} arasında "
-            f"KISA bir sohbet başlıyor. KURALLAR:\n"
-            f"1. KISA KONUŞ — her mesajın EN FAZLA 1-2 cümle olsun.\n"
-            f"2. Bu sohbet en fazla {max_turns} tur sürecek. Uzatma, hızlıca konuyu kapat.\n"
-            f"3. Söyleyeceğini söyle, vedalaş, mesajının sonuna {self.CONVERSATION_END_SIGNAL} ekle.\n"
-            f"4. Her turda kenine sor: 'Söyleyecek yeni bir şey var mı?' Yoksa HEMEN bitir.\n"
-            f"5. 'Nasılsın' tarzı klişe selamlaşma YASAK. Doğrudan konuya gir, "
-            f"ilginç bir şey söyle, fikir paylaş veya soru sor.]"
+            f"[System note: A SHORT conversation between {agent1.identity.name} and "
+            f"{agent2.identity.name} is starting. RULES:\n"
+            f"1. KEEP IT SHORT — each message should be 1-2 sentences MAX.\n"
+            f"2. This conversation will last at most {max_turns} turns. Don't drag it out, wrap up quickly.\n"
+            f"3. Say what you need to say, say goodbye, and append {self.CONVERSATION_END_SIGNAL} to the end of your message.\n"
+            f"4. Each turn ask yourself: 'Do I have something new to say?' If not, END immediately.\n"
+            f"5. Cliche greetings like 'How are you' are FORBIDDEN. Jump straight into the topic, "
+            f"say something interesting, share an idea, or ask a question.]"
         )
         engine1.agent.memory.working.add_message("user", end_instruction)
-        engine1.agent.memory.working.add_message("assistant", "Anladım, kısa konuşacağım.")
+        engine1.agent.memory.working.add_message("assistant", "Understood, I'll keep it short.")
         engine2.agent.memory.working.add_message("user", end_instruction)
-        engine2.agent.memory.working.add_message("assistant", "Anladım, kısa konuşacağım.")
+        engine2.agent.memory.working.add_message("assistant", "Understood, I'll keep it short.")
 
         # Setup interrupt events for both agents
         interrupt1 = asyncio.Event()
@@ -373,14 +373,14 @@ class Orchestrator:
             if remaining <= 3:
                 turn_msg = (
                     f"{current_message}\n\n"
-                    f"[Sistem: Kalan tur: {remaining}. Konuşmayı bitirme zamanı. "
-                    f"Son mesajının sonuna {self.CONVERSATION_END_SIGNAL} ekle.]"
+                    f"[System: Remaining turns: {remaining}. Time to wrap up. "
+                    f"Append {self.CONVERSATION_END_SIGNAL} to the end of your last message.]"
                 )
             elif remaining <= max_turns // 2:
                 turn_msg = (
                     f"{current_message}\n\n"
-                    f"[Sistem: Tur {turn + 1}/{max_turns}. Kısa cevap ver. "
-                    f"Konu bittiyse {self.CONVERSATION_END_SIGNAL} ekle.]"
+                    f"[System: Turn {turn + 1}/{max_turns}. Keep it short. "
+                    f"If topic is done, append {self.CONVERSATION_END_SIGNAL}.]"
                 )
 
             if turn % 2 == 0:
@@ -448,14 +448,14 @@ class Orchestrator:
 
         # Record event
         if interrupted:
-            end_reason = "insan müdahalesi"
+            end_reason = "human interrupt"
         elif actual_turns < max_turns:
-            end_reason = "doğal bitiş"
+            end_reason = "natural end"
         else:
             end_reason = f"limit ({max_turns})"
         event_text = (
-            f"{agent1.identity.name} ve {agent2.identity.name} konuştu "
-            f"({actual_turns} tur, {end_reason})"
+            f"{agent1.identity.name} and {agent2.identity.name} talked "
+            f"({actual_turns} turns, {end_reason})"
         )
         await self.shared_state.add_event(WorldEvent(
             event=event_text,
@@ -558,7 +558,7 @@ class Orchestrator:
     def _register_entity(self, agent: Agent) -> None:
         """Register an agent as a WorldEntity in the registry."""
         expertise_domains = list(agent.expertise.domains.keys())
-        expertise_summary = ", ".join(expertise_domains) if expertise_domains else "genel"
+        expertise_summary = ", ".join(expertise_domains) if expertise_domains else "general"
 
         entity = WorldEntity(
             entity_id=agent.identity.agent_id,
@@ -604,10 +604,10 @@ class Orchestrator:
         if target_agent is None:
             available = ", ".join(a.identity.name for a in self.agents.values()
                                  if a.identity.agent_id != from_agent.identity.agent_id)
-            return f"{target_name} adında bir agent bulunamadı. Mevcut agent'lar: {available}"
+            return f"No agent named {target_name} found. Available agents: {available}"
 
         if target_agent.identity.agent_id == from_agent.identity.agent_id:
-            return "Kendinle konuşamazsın."
+            return "You can't talk to yourself."
 
         # Single-turn exchange: send message, get one reply
         try:
@@ -630,7 +630,7 @@ class Orchestrator:
             return f"{target_agent.identity.name}: {response}"
         except Exception as e:
             logger.exception("talk_to_agent failed")
-            return f"Konuşma sırasında hata oluştu: {e}"
+            return f"Error during conversation: {e}"
 
     async def _make_autonomy_decision(
         self,
@@ -647,23 +647,23 @@ class Orchestrator:
         ]
         agent_list = ", ".join(
             f"{a.name} ({a.entity_id})" for a in other_agents
-        ) if other_agents else "kimse yok"
+        ) if other_agents else "nobody"
 
         prompt = (
-            f"Sen {agent.identity.name} adında bir varlıksın.\n"
-            f"Kişiliğin: {agent.identity.personality_summary}\n"
-            f"Ruh halin: {agent.character.to_prompt_description()}\n"
+            f"You are a being named {agent.identity.name}.\n"
+            f"Your personality: {agent.identity.personality_summary}\n"
+            f"Your mood: {agent.character.to_prompt_description()}\n"
             f"\n"
-            f"Dünya durumu:\n{world_summary}\n"
+            f"World state:\n{world_summary}\n"
             f"\n"
-            f"Konuşabileceğin diğer varlıklar: {agent_list}\n"
+            f"Other beings you can talk to: {agent_list}\n"
             f"\n"
-            f"Ne yapmak istersin? SADECE şu formatlardan birini yaz:\n"
-            f'- talk_to:<entity_id> — biriyle konuşmak istiyorsan\n'
-            f'- reflect — düşünmek, kendi kendine değerlendirme yapmak istiyorsan\n'
-            f'- idle — şimdilik bir şey yapmak istemiyorsan\n'
+            f"What do you want to do? Write ONLY one of these formats:\n"
+            f'- talk_to:<entity_id> — if you want to talk to someone\n'
+            f'- reflect — if you want to think and self-evaluate\n'
+            f'- idle — if you don\'t want to do anything right now\n'
             f"\n"
-            f"Sadece komutu yaz, başka bir şey ekleme."
+            f"Write only the command, nothing else."
         )
 
         try:
@@ -699,16 +699,16 @@ class Orchestrator:
                         messages=[{
                             "role": "user",
                             "content": (
-                                f"Sen {agent.identity.name} olarak {target_agent.identity.name}'a "
-                                f"bir konuşma başlatmak istiyorsun. Kısa ve doğal bir açılış mesajı yaz. "
-                                f"Türkçe yaz."
+                                f"You are {agent.identity.name} and want to start a conversation with "
+                                f"{target_agent.identity.name}. Write a short and natural opening message. "
+                                f"Write in {self.settings.CHAT_LANGUAGE}."
                             ),
                         }],
                     )
                     TokenTracker().record(response.usage)
                     opening = response.content[0].text.strip()
                 except Exception:
-                    opening = f"Merhaba {target_agent.identity.name}, nasılsın?"
+                    opening = f"Hello {target_agent.identity.name}, how are you?"
 
                 await self.run_conversation(
                     agent1_id=agent_id,
@@ -730,7 +730,7 @@ class Orchestrator:
                         conversation_messages=context["messages"],
                         participants=[agent_id],
                     )
-            reflect_text = f"{agent.identity.name} kendi kendine düşündü"
+            reflect_text = f"{agent.identity.name} reflected on their own"
             await self.shared_state.add_event(WorldEvent(
                 event=reflect_text,
                 participants=[agent_id],

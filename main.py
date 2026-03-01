@@ -39,8 +39,8 @@ def main() -> None:
 
     settings = Settings()
     if not settings.ANTHROPIC_API_KEY:
-        print("HATA: ANTHROPIC_API_KEY .env dosyasinda bulunamadi.")
-        print("Lutfen .env dosyasi olusturun: ANTHROPIC_API_KEY=sk-...")
+        print("ERROR: ANTHROPIC_API_KEY not found in .env file.")
+        print("Please create a .env file: ANTHROPIC_API_KEY=sk-...")
         sys.exit(1)
 
     app = LivingAgentsApp(settings=settings)

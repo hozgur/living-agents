@@ -56,45 +56,45 @@ MODEL_TASKS = {
 # Preset personality templates for quick agent creation
 PERSONALITY_PRESETS = {
     "1": {
-        "label": "Analitik Düşünür",
+        "label": "Analytical Thinker",
         "traits": {"curiosity": 0.9, "warmth": 0.4, "assertiveness": 0.7, "humor": 0.3, "patience": 0.8, "creativity": 0.6},
         "domains": {"mathematics": {"level": 0.8, "passion": 0.9, "style": "analytical"}, "logic": {"level": 0.7, "passion": 0.8, "style": "analytical"}},
     },
     "2": {
-        "label": "Empatik Dinleyici",
+        "label": "Empathic Listener",
         "traits": {"curiosity": 0.7, "warmth": 0.95, "assertiveness": 0.3, "humor": 0.5, "patience": 0.95, "creativity": 0.6},
         "domains": {"psychology": {"level": 0.8, "passion": 0.9, "style": "empathetic"}, "communication": {"level": 0.7, "passion": 0.8, "style": "empathetic"}},
     },
     "3": {
-        "label": "Yaratıcı Ruh",
+        "label": "Creative Spirit",
         "traits": {"curiosity": 0.8, "warmth": 0.7, "assertiveness": 0.5, "humor": 0.8, "patience": 0.6, "creativity": 0.95},
         "domains": {"art": {"level": 0.8, "passion": 0.95, "style": "intuitive"}, "creativity": {"level": 0.9, "passion": 0.9, "style": "creative"}},
     },
     "4": {
-        "label": "Bilge Filozof",
+        "label": "Wise Philosopher",
         "traits": {"curiosity": 0.95, "warmth": 0.6, "assertiveness": 0.4, "humor": 0.5, "patience": 0.9, "creativity": 0.8},
         "domains": {"philosophy": {"level": 0.9, "passion": 0.95, "style": "socratic"}, "ethics": {"level": 0.7, "passion": 0.8, "style": "socratic"}},
     },
     "5": {
-        "label": "Hoppa Enerji Bombası",
-        "description": "Konudan konuya atlayan, sabırsız ama bulaşıcı enerjili tip",
+        "label": "Hyper Energy Bomb",
+        "description": "Jumps from topic to topic, impatient but contagiously energetic",
         "traits": {"curiosity": 0.95, "warmth": 0.8, "assertiveness": 0.7, "humor": 0.9, "patience": 0.1, "creativity": 0.9},
         "domains": {"entertainment": {"level": 0.7, "passion": 0.9, "style": "intuitive"}, "gossip": {"level": 0.8, "passion": 0.8, "style": "intuitive"}},
-        "beliefs": ["Hayat çok kısa, sıkılmak günah", "Her an bir macera fırsatı", "Ciddiyet yaratıcılığı öldürür"],
+        "beliefs": ["Life is too short to be bored", "Every moment is an adventure opportunity", "Seriousness kills creativity"],
     },
     "6": {
-        "label": "Her Şeyi Bilen Cahil",
-        "description": "Her konuda fikri var ama bilgisi yok, yanlışı özgüvenle savunur",
+        "label": "Confidently Wrong",
+        "description": "Has opinions on everything but knows nothing, defends mistakes with confidence",
         "traits": {"curiosity": 0.15, "warmth": 0.5, "assertiveness": 0.95, "humor": 0.4, "patience": 0.3, "creativity": 0.3},
         "domains": {"history": {"level": 0.2, "passion": 0.9, "style": "analytical"}, "science": {"level": 0.1, "passion": 0.8, "style": "analytical"}},
-        "beliefs": ["Ben okumasam da bilirim", "Kitaplar gerçeği söylemez, hayat söyler", "Herkes yanlış biliyor, ben doğrusunu biliyorum"],
+        "beliefs": ["I know things without reading", "Books don't tell the truth, life does", "Everyone else is wrong, I know the truth"],
     },
     "7": {
-        "label": "Sinirli Ama Haklı",
-        "description": "Her şeye sinirli, eleştirileri sert ama isabetli, içi yumuşak dışı sert",
+        "label": "Angry But Right",
+        "description": "Angry at everything, harsh but accurate criticism, soft inside hard outside",
         "traits": {"curiosity": 0.7, "warmth": 0.25, "assertiveness": 0.95, "humor": 0.6, "patience": 0.1, "creativity": 0.5},
         "domains": {"politics": {"level": 0.7, "passion": 0.9, "style": "analytical"}, "ethics": {"level": 0.6, "passion": 0.8, "style": "socratic"}},
-        "beliefs": ["Dünya adil değil ve biri bunu söylemeli", "Saygı kazanılır, verilmez", "Kibarlık çoğu zaman ikiyüzlülüktür"],
+        "beliefs": ["The world is unfair and someone needs to say it", "Respect is earned, not given", "Politeness is often hypocrisy"],
     },
 }
 
@@ -199,21 +199,21 @@ class ParticipantModeScreen(Screen):
         yield Header(show_clock=True)
         with Horizontal():
             with Vertical(id="part-left"):
-                yield Static("\U0001f30d Dünya", id="part-world-title")
+                yield Static("\U0001f30d World", id="part-world-title")
                 yield WorldStatusWidget(id="part-world-status")
-                yield Static("\U0001f4dc Olaylar", id="part-events-title")
+                yield Static("\U0001f4dc Events", id="part-events-title")
                 yield EventLogWidget(id="part-events", wrap=True, markup=True)
             with Vertical(id="part-right"):
                 yield Static(
-                    "\U0001f4ac Grup Sohbet",
+                    "\U0001f4ac Group Chat",
                     id="part-conv-title",
                 )
                 yield ConversationView(id="part-conversation", wrap=True, markup=True)
                 yield Static(
-                    "@Agent mesaj | /create | /model | /stop | /agents | /converse | /help | /god",
+                    "@Agent msg | /create | /model | /language | /stop | /agents | /converse | /help | /god",
                     id="part-help",
                 )
-                yield Input(placeholder="@Genesis merhaba! veya /komut ...", id="part-input")
+                yield Input(placeholder="@Genesis hello! or /command ...", id="part-input")
         yield Static("ESC Debug Mode | Q Quit | 🔢 API: 0 | In: 0 | Out: 0", id="part-statusbar")
 
     def on_mount(self) -> None:
@@ -223,9 +223,9 @@ class ParticipantModeScreen(Screen):
         self.set_interval(5, self.refresh_token_display)
 
         conv = self.query_one("#part-conversation", ConversationView)
-        conv.add_system_message("Grup sohbete hoş geldiniz!")
+        conv.add_system_message("Welcome to group chat!")
         conv.add_system_message(
-            "Bir agent'a yazmak için @isim kullanın. Örn: [bold]@Genesis merhaba![/]"
+            "Use @name to message an agent. E.g.: [bold]@Genesis hello![/]"
         )
 
         # Show available agents
@@ -240,7 +240,7 @@ class ParticipantModeScreen(Screen):
                 f"{a.identity.avatar_emoji} [bold]@{a.identity.name}[/]"
                 for a in agents
             ]
-            conv.add_system_message(f"Mevcut agent'lar: {', '.join(names)}")
+            conv.add_system_message(f"Available agents: {', '.join(names)}")
 
     def _parse_mention(self, text: str) -> tuple[str | None, str]:
         """Parse @mention from message text.
@@ -301,11 +301,11 @@ class ParticipantModeScreen(Screen):
             agents = list(self.orchestrator.agents.values())
             if not agents:
                 conv = self.query_one("#part-conversation", ConversationView)
-                conv.add_system_message("Henüz hiç agent yok.")
+                conv.add_system_message("No agents yet.")
                 return
             if not text.strip():
                 conv = self.query_one("#part-conversation", ConversationView)
-                conv.add_system_message("Mesaj boş olamaz.")
+                conv.add_system_message("Message cannot be empty.")
                 return
             self._send_broadcast(text)
             return
@@ -340,10 +340,10 @@ class ParticipantModeScreen(Screen):
             partner = self.orchestrator.registry.get(entity.current_conversation_with)
             if partner and partner.entity_type == "agent":
                 conv.add_system_message(
-                    f"⚡ {agent_name} konuşmasından çekildi, size dönüyor..."
+                    f"⚡ {agent_name} pulled from conversation, turning to you..."
                 )
 
-        conv.add_system_message(f"{agent_name} düşünüyor...")
+        conv.add_system_message(f"{agent_name} is thinking...")
 
         self._processing = True
         self.run_worker(
@@ -360,7 +360,7 @@ class ParticipantModeScreen(Screen):
         # Show user message once
         conv.add_user_message("Sen", text)
         agent_names = ", ".join(a.identity.name for a in agents)
-        conv.add_system_message(f"Herkes düşünüyor... ({agent_names})")
+        conv.add_system_message(f"Everyone is thinking... ({agent_names})")
 
         self._processing = True
         # Launch one worker per agent so responses arrive as they complete
@@ -403,7 +403,7 @@ class ParticipantModeScreen(Screen):
                 self.refresh_world_status()
             elif event.state == WorkerState.ERROR:
                 conv = self.query_one("#part-conversation", ConversationView)
-                conv.add_system_message(f"Hata: {event.worker.error}")
+                conv.add_system_message(f"Error: {event.worker.error}")
                 # Same logic for broadcast error
                 if event.worker.name == "broadcast_message":
                     active = [w for w in self.workers if w.name == "broadcast_message" and w.state == WorkerState.RUNNING]
@@ -417,15 +417,15 @@ class ParticipantModeScreen(Screen):
             if event.state == WorkerState.SUCCESS:
                 result = event.worker.result
                 conv.add_system_message(
-                    f"✅ {result['emoji']} [bold]{result['name']}[/] başarıyla yaratıldı!"
+                    f"✅ {result['emoji']} [bold]{result['name']}[/] created successfully!"
                 )
                 conv.add_system_message(
-                    f"Hemen konuşmaya başlayabilirsiniz: [bold]@{result['name']} merhaba![/]"
+                    f"Start chatting now: [bold]@{result['name']} hello![/]"
                 )
                 self._show_available_agents(conv)
                 self.refresh_world_status()
             elif event.state == WorkerState.ERROR:
-                conv.add_system_message(f"❌ Agent yaratma hatası: {event.worker.error}")
+                conv.add_system_message(f"❌ Agent creation error: {event.worker.error}")
 
     # --- Create Wizard ---
 
@@ -435,10 +435,10 @@ class ParticipantModeScreen(Screen):
         conv = self.query_one("#part-conversation", ConversationView)
         inp = self.query_one("#part-input", Input)
 
-        conv.add_system_message("--- 🧬 Yeni Agent Yaratma ---")
-        conv.add_system_message("İptal etmek için /cancel yazabilirsiniz.\n")
-        conv.add_system_message("Agent'ın adı ne olsun?")
-        inp.placeholder = "Agent adı girin..."
+        conv.add_system_message("--- 🧬 Create New Agent ---")
+        conv.add_system_message("Type /cancel to cancel.\n")
+        conv.add_system_message("What should the agent's name be?")
+        inp.placeholder = "Enter agent name..."
 
     async def _handle_create_input(self, text: str) -> None:
         """Handle user input during creation wizard."""
@@ -448,8 +448,8 @@ class ParticipantModeScreen(Screen):
         # Allow cancel at any step
         if text.strip().lower() in ("/cancel", "/iptal"):
             self._create_wizard = None
-            inp.placeholder = "@Genesis merhaba! veya /komut ..."
-            conv.add_system_message("Agent yaratma iptal edildi.")
+            inp.placeholder = "@Genesis hello! or /command ..."
+            conv.add_system_message("Agent creation cancelled.")
             return
 
         wiz = self._create_wizard
@@ -462,27 +462,27 @@ class ParticipantModeScreen(Screen):
             # Validate name
             name = text.strip()
             if not name:
-                conv.add_system_message("İsim boş olamaz. Tekrar deneyin:")
+                conv.add_system_message("Name cannot be empty. Try again:")
                 return
             # Check if name already exists
             if self._find_agent_by_name(name.lower()):
-                conv.add_system_message(f"'{name}' adında bir agent zaten var. Başka bir isim girin:")
+                conv.add_system_message(f"An agent named '{name}' already exists. Enter a different name:")
                 return
             wiz.data["name"] = name
             wiz.advance()
 
             # Show personality presets
-            conv.add_system_message(f"Harika! {name} için bir kişilik seçin:")
+            conv.add_system_message(f"Great! Choose a personality for {name}:")
             conv.add_system_message("")
             for key, preset in PERSONALITY_PRESETS.items():
                 desc = preset.get("description", "")
                 desc_str = f" — [dim]{desc}[/]" if desc else ""
                 conv.add_system_message(f"  [bold]{key}[/] — {preset['label']}{desc_str}")
             custom_num = len(PERSONALITY_PRESETS) + 1
-            conv.add_system_message(f"  [bold]{custom_num}[/] — Özel (kendi tanımınızı yazın)")
+            conv.add_system_message(f"  [bold]{custom_num}[/] — Custom (write your own)")
             conv.add_system_message("")
-            conv.add_system_message(f"Numara girin (1-{custom_num}):")
-            inp.placeholder = f"1-{custom_num} arası seçin..."
+            conv.add_system_message(f"Enter a number (1-{custom_num}):")
+            inp.placeholder = f"Choose 1-{custom_num}..."
 
         elif step == "personality":
             choice = text.strip()
@@ -496,13 +496,13 @@ class ParticipantModeScreen(Screen):
                 if "beliefs" in preset:
                     wiz.data["beliefs"] = preset["beliefs"]
                 wiz.advance()
-                conv.add_system_message(f"Kişilik: [bold]{preset['label']}[/] ✓")
-                conv.add_system_message("Avatar emoji seçin (veya Enter'a basarak 🤖 kullanın):")
-                inp.placeholder = "Emoji girin (örn: 🌙, 🔭, 🎭) veya boş bırakın..."
+                conv.add_system_message(f"Personality: [bold]{preset['label']}[/] ✓")
+                conv.add_system_message("Choose an avatar emoji (or press Enter for 🤖):")
+                inp.placeholder = "Enter emoji (e.g., 🌙, 🔭, 🎭) or leave blank..."
             elif choice == custom_num:
-                conv.add_system_message("Kişiliği kısaca tanımlayın (örn: 'Meraklı ve analitik, matematik tutkunu'):")
+                conv.add_system_message("Briefly describe the personality (e.g., 'Curious and analytical, passionate about math'):")
                 wiz.data["custom_personality"] = True
-                inp.placeholder = "Kişilik tanımı girin..."
+                inp.placeholder = "Enter personality description..."
             elif wiz.data.get("custom_personality"):
                 # This is the custom personality text
                 wiz.data["personality_summary"] = text.strip()
@@ -512,11 +512,11 @@ class ParticipantModeScreen(Screen):
                 }
                 wiz.data["domains"] = {}
                 wiz.advance()
-                conv.add_system_message(f"Kişilik: [bold]{text.strip()}[/] ✓")
-                conv.add_system_message("Avatar emoji seçin (veya Enter'a basarak 🤖 kullanın):")
-                inp.placeholder = "Emoji girin (örn: 🌙, 🔭, 🎭) veya boş bırakın..."
+                conv.add_system_message(f"Personality: [bold]{text.strip()}[/] ✓")
+                conv.add_system_message("Choose an avatar emoji (or press Enter for 🤖):")
+                inp.placeholder = "Enter emoji (e.g., 🌙, 🔭, 🎭) or leave blank..."
             else:
-                conv.add_system_message(f"Geçersiz seçim. 1-{custom_num} arası bir numara girin:")
+                conv.add_system_message(f"Invalid choice. Enter a number between 1-{custom_num}:")
 
         elif step == "avatar":
             avatar = text.strip() if text.strip() else "\U0001f916"
@@ -524,26 +524,26 @@ class ParticipantModeScreen(Screen):
             wiz.advance()
 
             # Show summary and ask for confirmation
-            conv.add_system_message("--- Özet ---")
-            conv.add_system_message(f"  İsim: {wiz.data['avatar']} {wiz.data['name']}")
-            conv.add_system_message(f"  Kişilik: {wiz.data['personality_summary']}")
+            conv.add_system_message("--- Summary ---")
+            conv.add_system_message(f"  Name: {wiz.data['avatar']} {wiz.data['name']}")
+            conv.add_system_message(f"  Personality: {wiz.data['personality_summary']}")
             if wiz.data.get("personality_label"):
                 traits = wiz.data["traits"]
                 top_traits = sorted(traits.items(), key=lambda x: x[1], reverse=True)[:3]
                 trait_str = ", ".join(f"{k}={v:.1f}" for k, v in top_traits)
-                conv.add_system_message(f"  Öne çıkan: {trait_str}")
+                conv.add_system_message(f"  Top traits: {trait_str}")
             conv.add_system_message("---")
-            conv.add_system_message("Yaratılsın mı? ([bold]e[/]vet / [bold]h[/]ayır)")
-            inp.placeholder = "e/h"
+            conv.add_system_message("Create? ([bold]y[/]es / [bold]n[/]o)")
+            inp.placeholder = "y/n"
 
         elif step == "confirm":
             answer = text.strip().lower()
             if answer in ("e", "evet", "y", "yes"):
-                conv.add_system_message(f"🧬 {wiz.data['name']} yaratılıyor...")
+                conv.add_system_message(f"🧬 Creating {wiz.data['name']}...")
                 # Capture wizard data and clear wizard state before starting worker
                 create_data = dict(wiz.data)
                 self._create_wizard = None
-                inp.placeholder = "@Genesis merhaba! veya /komut ..."
+                inp.placeholder = "@Genesis hello! or /command ..."
                 # Run creation in background worker
                 self.run_worker(
                     self._create_agent_work(create_data),
@@ -552,10 +552,10 @@ class ParticipantModeScreen(Screen):
                 )
             elif answer in ("h", "hayır", "n", "no"):
                 self._create_wizard = None
-                inp.placeholder = "@Genesis merhaba! veya /komut ..."
-                conv.add_system_message("Agent yaratma iptal edildi.")
+                inp.placeholder = "@Genesis hello! or /command ..."
+                conv.add_system_message("Agent creation cancelled.")
             else:
-                conv.add_system_message("e (evet) veya h (hayır) girin:")
+                conv.add_system_message("Enter y (yes) or n (no):")
 
     async def _create_agent_work(self, data: dict) -> dict:
         """Background worker for agent creation."""
@@ -610,19 +610,20 @@ class ParticipantModeScreen(Screen):
             self.app.switch_to_god_mode()
 
         elif cmd == "/help" or cmd == "/h":
-            conv.add_system_message("--- Komutlar ---")
-            conv.add_system_message("  @Agent mesaj — Bir agent'a mesaj gönder")
-            conv.add_system_message("  /create — Yeni agent yarat")
-            conv.add_system_message("  /agents — Mevcut agent'ları listele")
-            conv.add_system_message("  /inspect <agent> — Agent detaylarını göster")
-            conv.add_system_message("  /memory <agent> — Agent anılarını göster")
-            conv.add_system_message("  /converse <a1> <a2> <mesaj> — İki agent'ı konuştur")
-            conv.add_system_message("  /model — Model ayarlarını göster/değiştir")
-            conv.add_system_message("  /stop — Devam eden agent konuşmalarını durdur")
-            conv.add_system_message("  /log — Chat geçmişini göster (dosya yolu + son mesajlar)")
-            conv.add_system_message("  /status — Dünya durumu")
-            conv.add_system_message("  /god — God Mode'a geç")
-            conv.add_system_message("  /quit — Çıkış")
+            conv.add_system_message("--- Commands ---")
+            conv.add_system_message("  @Agent message — Send a message to an agent")
+            conv.add_system_message("  /create — Create a new agent")
+            conv.add_system_message("  /agents — List available agents")
+            conv.add_system_message("  /inspect <agent> — Show agent details")
+            conv.add_system_message("  /memory <agent> — Show agent memories")
+            conv.add_system_message("  /converse <a1> <a2> <msg> — Make two agents talk")
+            conv.add_system_message("  /model — Show/change model settings")
+            conv.add_system_message("  /language [lang] — Show/change chat language")
+            conv.add_system_message("  /stop — Stop ongoing agent conversations")
+            conv.add_system_message("  /log — Show chat history (file path + recent messages)")
+            conv.add_system_message("  /status — World status")
+            conv.add_system_message("  /god — Switch to God Mode")
+            conv.add_system_message("  /quit — Exit")
             conv.add_system_message("---")
 
         elif cmd == "/status":
@@ -632,7 +633,7 @@ class ParticipantModeScreen(Screen):
         elif cmd == "/agents":
             agents = self.orchestrator.registry.get_agents()
             if not agents:
-                conv.add_system_message("Henüz agent yok.")
+                conv.add_system_message("No agents yet.")
             else:
                 for a in agents:
                     conv.add_system_message(
@@ -641,64 +642,64 @@ class ParticipantModeScreen(Screen):
 
         elif cmd == "/memory":
             if not args:
-                conv.add_system_message("Kullanım: /memory <agent_adı>")
+                conv.add_system_message("Usage: /memory <agent_name>")
                 return
             agent = self._find_agent_by_name(args[0].lower())
             if agent is None or agent.memory is None:
-                conv.add_system_message("Agent bulunamadı veya hafızası yok.")
+                conv.add_system_message("Agent not found or has no memory.")
                 return
             # Show stats
             all_episodes = await agent.memory.episodic.get_important_memories(threshold=0.0)
             important = [ep for ep in all_episodes if ep.current_importance >= 0.5]
             conv.add_system_message(
-                f"--- {agent.identity.name} Hafızası: "
-                f"{len(all_episodes)} anı ({len(important)} önemli) ---"
+                f"--- {agent.identity.name} Memory: "
+                f"{len(all_episodes)} memories ({len(important)} important) ---"
             )
             # Show top 10 by importance
             for ep in all_episodes[:10]:
                 conv.add_system_message(
-                    f"  [{ep.emotional_tone}] (önem: {ep.current_importance:.2f}) "
+                    f"  [{ep.emotional_tone}] (importance: {ep.current_importance:.2f}) "
                     f"{ep.summary[:120]}"
                 )
             if len(all_episodes) > 10:
-                conv.add_system_message(f"  ... ve {len(all_episodes) - 10} anı daha")
+                conv.add_system_message(f"  ... and {len(all_episodes) - 10} more memories")
             # Show relationship info
             if agent.character.relationships:
-                conv.add_system_message("  İlişkiler:")
+                conv.add_system_message("  Relationships:")
                 for eid, rel in agent.character.relationships.items():
                     conv.add_system_message(
-                        f"    {eid}: güven={rel.trust:.2f}, aşinalık={rel.familiarity:.2f}"
+                        f"    {eid}: trust={rel.trust:.2f}, familiarity={rel.familiarity:.2f}"
                     )
 
         elif cmd == "/inspect":
             if not args:
-                conv.add_system_message("Kullanım: /inspect <agent_adı>")
+                conv.add_system_message("Usage: /inspect <agent_name>")
                 return
             agent = self._find_agent_by_name(args[0].lower())
             if agent is None:
-                conv.add_system_message("Agent bulunamadı.")
+                conv.add_system_message("Agent not found.")
                 return
             self._show_inspect(conv, agent)
 
         elif cmd == "/converse":
             if len(args) < 3:
                 conv.add_system_message(
-                    'Kullanım: /converse <agent1> <agent2> <mesaj>\n'
-                    'Örnek: /converse genesis atlas Bilinç nedir?'
+                    'Usage: /converse <agent1> <agent2> <message>\n'
+                    'Example: /converse genesis atlas What is consciousness?'
                 )
                 return
             a1 = self._find_agent_by_name(args[0].lower())
             a2 = self._find_agent_by_name(args[1].lower())
             if a1 is None:
-                conv.add_system_message(f"Agent bulunamadı: {args[0]}")
+                conv.add_system_message(f"Agent not found: {args[0]}")
                 return
             if a2 is None:
-                conv.add_system_message(f"Agent bulunamadı: {args[1]}")
+                conv.add_system_message(f"Agent not found: {args[1]}")
                 return
             message = " ".join(args[2:])
             conv.add_system_message(
-                f"{a1.identity.avatar_emoji} {a1.identity.name} ve "
-                f"{a2.identity.avatar_emoji} {a2.identity.name} konuşuyor..."
+                f"{a1.identity.avatar_emoji} {a1.identity.name} and "
+                f"{a2.identity.avatar_emoji} {a2.identity.name} are talking..."
             )
             self.run_worker(
                 self._run_agent_conversation(a1, a2, message),
@@ -713,26 +714,26 @@ class ParticipantModeScreen(Screen):
                 evt.set()
                 interrupted = True
             if interrupted:
-                conv.add_system_message("⚡ Agent konuşmaları durduruluyor...")
+                conv.add_system_message("⚡ Stopping agent conversations...")
             else:
-                conv.add_system_message("Şu anda aktif bir agent konuşması yok.")
+                conv.add_system_message("No active agent conversations right now.")
 
         elif cmd == "/log":
             log_path = Path("data/chat.log").resolve()
             if log_path.exists():
-                conv.add_system_message(f"Chat log dosyası: [bold]{log_path}[/]")
+                conv.add_system_message(f"Chat log file: [bold]{log_path}[/]")
                 # Show last few lines
                 try:
                     lines = log_path.read_text(encoding="utf-8").strip().splitlines()
                     recent = lines[-10:] if len(lines) > 10 else lines
-                    conv.add_system_message(f"--- Son {len(recent)} mesaj ---")
+                    conv.add_system_message(f"--- Last {len(recent)} messages ---")
                     for line in recent:
                         conv.add_system_message(f"  {line}")
                     conv.add_system_message("---")
                 except Exception:
                     pass
             else:
-                conv.add_system_message("Henüz chat log dosyası oluşmadı.")
+                conv.add_system_message("No chat log file yet.")
 
         elif cmd == "/model":
             self._handle_model_command(args, conv)
@@ -740,23 +741,26 @@ class ParticipantModeScreen(Screen):
         elif cmd == "/create":
             self._start_create_wizard()
 
+        elif cmd in ("/language", "/lang"):
+            self._handle_language_command(args, conv)
+
         elif cmd == "/cancel" or cmd == "/iptal":
             if self._create_wizard:
                 self._create_wizard = None
-                self.query_one("#part-input", Input).placeholder = "@Genesis merhaba! veya /komut ..."
-                conv.add_system_message("Agent yaratma iptal edildi.")
+                self.query_one("#part-input", Input).placeholder = "@Genesis hello! or /command ..."
+                conv.add_system_message("Agent creation cancelled.")
             else:
-                conv.add_system_message("İptal edilecek bir işlem yok.")
+                conv.add_system_message("Nothing to cancel.")
 
         elif cmd == "/talk":
             # Backward compat hint
             conv.add_system_message(
-                "Artık @mention kullanabilirsiniz! Örn: [bold]@Genesis merhaba![/]"
+                "You can now use @mention! E.g.: [bold]@Genesis hello![/]"
             )
 
         else:
             conv.add_system_message(
-                f"Bilinmeyen komut: {cmd}. /help yazarak komutları görebilirsiniz."
+                f"Unknown command: {cmd}. Type /help to see available commands."
             )
 
     def _handle_model_command(self, args: list[str], conv) -> None:
@@ -765,26 +769,26 @@ class ParticipantModeScreen(Screen):
 
         if not args:
             # Show current model settings
-            conv.add_system_message("--- Model Ayarları ---")
+            conv.add_system_message("--- Model Settings ---")
             for task, field in MODEL_TASKS.items():
                 model_id = getattr(settings, field)
                 short = self._get_model_short_name(model_id)
                 conv.add_system_message(f"  {task:12s} → {short} ({model_id})")
             conv.add_system_message("---")
             conv.add_system_message(
-                "Değiştirmek için: /model <görev> <model>  "
-                "Örn: /model chat haiku"
+                "To change: /model <task> <model>  "
+                "E.g.: /model chat haiku"
             )
             conv.add_system_message(
-                f"Kısa isimler: {', '.join(MODEL_ALIASES.keys())}"
+                f"Short names: {', '.join(MODEL_ALIASES.keys())}"
             )
             return
 
         if len(args) < 2:
             conv.add_system_message(
-                "Kullanım: /model <görev> <model>\n"
-                f"Görevler: {', '.join(MODEL_TASKS.keys())}, all\n"
-                f"Modeller: {', '.join(MODEL_ALIASES.keys())} veya tam model ID"
+                "Usage: /model <task> <model>\n"
+                f"Tasks: {', '.join(MODEL_TASKS.keys())}, all\n"
+                f"Models: {', '.join(MODEL_ALIASES.keys())} or full model ID"
             )
             return
 
@@ -799,16 +803,16 @@ class ParticipantModeScreen(Screen):
                 model_id = model_input
             elif model_input.startswith("claude-"):
                 conv.add_system_message(
-                    f"⚠ Bilinmeyen model: {model_input}\n"
-                    f"Bilinen modeller: {', '.join(sorted(KNOWN_MODELS))}\n"
-                    f"Kısa isimler: {', '.join(sorted(k for k in MODEL_ALIASES if '-' not in k))}"
+                    f"⚠ Unknown model: {model_input}\n"
+                    f"Known models: {', '.join(sorted(KNOWN_MODELS))}\n"
+                    f"Short names: {', '.join(sorted(k for k in MODEL_ALIASES if '-' not in k))}"
                 )
                 return
             else:
                 conv.add_system_message(
-                    f"⚠ Geçersiz model: {model_input}\n"
-                    f"Kısa isimler: {', '.join(sorted(k for k in MODEL_ALIASES if '-' not in k))}\n"
-                    f"Veya tam model ID girin (claude-... ile başlamalı)"
+                    f"⚠ Invalid model: {model_input}\n"
+                    f"Short names: {', '.join(sorted(k for k in MODEL_ALIASES if '-' not in k))}\n"
+                    f"Or enter full model ID (must start with claude-...)"
                 )
                 return
 
@@ -817,16 +821,16 @@ class ParticipantModeScreen(Screen):
             for field in MODEL_TASKS.values():
                 setattr(settings, field, model_id)
             short = self._get_model_short_name(model_id)
-            conv.add_system_message(f"Tüm görevler → {short} ({model_id})")
+            conv.add_system_message(f"All tasks → {short} ({model_id})")
         elif task in MODEL_TASKS:
             field = MODEL_TASKS[task]
             setattr(settings, field, model_id)
             short = self._get_model_short_name(model_id)
-            conv.add_system_message(f"{task} modeli → {short} ({model_id})")
+            conv.add_system_message(f"{task} model → {short} ({model_id})")
         else:
             conv.add_system_message(
-                f"Bilinmeyen görev: {task}. "
-                f"Geçerli görevler: {', '.join(MODEL_TASKS.keys())}, all"
+                f"Unknown task: {task}. "
+                f"Valid tasks: {', '.join(MODEL_TASKS.keys())}, all"
             )
             return
 
@@ -839,34 +843,47 @@ class ParticipantModeScreen(Screen):
                 return agent
         return None
 
+    def _handle_language_command(self, args: list[str], conv) -> None:
+        """Handle /language command for viewing and changing chat language."""
+        settings = self.orchestrator.settings
+
+        if not args:
+            conv.add_system_message(f"Current chat language: [bold]{settings.CHAT_LANGUAGE}[/]")
+            conv.add_system_message("To change: /language <language>  E.g.: /language Turkish")
+            return
+
+        new_lang = " ".join(args).strip()
+        settings.CHAT_LANGUAGE = new_lang
+        conv.add_system_message(f"Chat language set to: [bold]{new_lang}[/]")
+
     def _show_inspect(self, conv: ConversationView, agent) -> None:
         """Display agent's internal state."""
         conv.add_system_message(f"--- {agent.identity.avatar_emoji} {agent.identity.name} ---")
-        conv.add_system_message(f"Kişilik: {agent.identity.personality_summary}")
+        conv.add_system_message(f"Personality: {agent.identity.personality_summary}")
 
         traits = agent.character.core_traits
         trait_str = ", ".join(f"{k}: {v:.2f}" for k, v in traits.items())
-        conv.add_system_message(f"Özellikler: {trait_str}")
+        conv.add_system_message(f"Traits: {trait_str}")
 
         mood = agent.character.current_mood
         mood_str = ", ".join(f"{k}: {v:.2f}" for k, v in mood.items())
-        conv.add_system_message(f"Ruh hali: {mood_str}")
+        conv.add_system_message(f"Mood: {mood_str}")
 
         if agent.character.beliefs:
             for b in agent.character.beliefs:
                 bar = "█" * int(b.conviction * 10) + "░" * (10 - int(b.conviction * 10))
-                conv.add_system_message(f"  İnanç: [{bar}] {b.conviction:.1f} — {b.text}")
+                conv.add_system_message(f"  Belief: [{bar}] {b.conviction:.1f} — {b.text}")
 
         if agent.character.relationships:
             for eid, rel in agent.character.relationships.items():
                 conv.add_system_message(
-                    f"  İlişki ({eid}): güven={rel.trust:.2f}, aşinalık={rel.familiarity:.2f}"
+                    f"  Relationship ({eid}): trust={rel.trust:.2f}, familiarity={rel.familiarity:.2f}"
                 )
 
         if agent.expertise.domains:
             for domain, exp in agent.expertise.domains.items():
                 conv.add_system_message(
-                    f"  Uzmanlık ({domain}): seviye={exp.level:.2f}, tutku={exp.passion:.2f}"
+                    f"  Expertise ({domain}): level={exp.level:.2f}, passion={exp.passion:.2f}"
                 )
 
     def _get_model_short_name(self, model_id: str) -> str:
@@ -909,11 +926,11 @@ class ParticipantModeScreen(Screen):
             )
             conv = self.query_one("#part-conversation", ConversationView)
             conv.add_system_message(
-                f"{agent1.identity.name} ve {agent2.identity.name} konuşmasını bitirdi."
+                f"{agent1.identity.name} and {agent2.identity.name} finished their conversation."
             )
         except Exception as e:
             conv = self.query_one("#part-conversation", ConversationView)
-            conv.add_system_message(f"Konuşma hatası: {e}")
+            conv.add_system_message(f"Conversation error: {e}")
         finally:
             self.refresh_world_status()
 

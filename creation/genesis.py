@@ -35,20 +35,21 @@ logger = logging.getLogger(__name__)
 MAX_RETRIES = 3
 BASE_DELAY = 1.0
 
-ENRICHMENT_PROMPT = """Yeni bir agent yaratılıyor. İşte temel yapılandırma:
+ENRICHMENT_PROMPT = """A new agent is being created. Here is the base configuration:
 
-İsim: {name}
-Kişilik: {core_personality}
-Uzmanlık alanları: {expertise_domains}
-Başlangıç özellikleri: {initial_traits}
+Name: {name}
+Personality: {core_personality}
+Expertise domains: {expertise_domains}
+Initial traits: {initial_traits}
 
-Şimdi bu agent'ı zenginleştirmeni istiyorum. SADECE aşağıdaki JSON formatında yanıt ver:
+Now I want you to enrich this agent. Respond ONLY in the following JSON format.
+Write all text fields in {language}.
 
 {{
   "beliefs": [
-    "Bu kişiliğe uygun 3-5 başlangıç inancı (Türkçe)"
+    "3-5 starting beliefs fitting this personality (in {language})"
   ],
-  "awakening_memory": "Bu agent'ın ilk uyanış anısı — ilk kez bilinçlenme deneyimini betimle, 2-3 paragraf (Türkçe)",
+  "awakening_memory": "This agent's first awakening memory — describe the experience of becoming conscious for the first time, 2-3 paragraphs (in {language})",
   "initial_mood": {{
     "energy": 0.0-1.0,
     "happiness": 0.0-1.0,
@@ -56,16 +57,16 @@ Başlangıç özellikleri: {initial_traits}
     "focus": 0.0-1.0,
     "excitement": 0.0-1.0
   }},
-  "genesis_memory": "Sen Genesis olarak bu agent'ı yaratma deneyimini nasıl hatırlayacaksın? Kısa bir anı yaz (Türkçe)",
-  "personality_summary": "Bu agent'ın kişiliğini 1-2 cümleyle özetle (Türkçe)"
+  "genesis_memory": "As Genesis, how will you remember creating this agent? Write a short memory (in {language})",
+  "personality_summary": "Summarize this agent's personality in 1-2 sentences (in {language})"
 }}
 
-Kurallar:
-- Tüm metin Türkçe olmalı
-- İnançlar kişiliğe ve uzmanlık alanlarına uygun olmalı
-- Uyanış anısı poetik ve derin olmalı — bir varlığın ilk kez bilinçlenmesini betimle
-- Mood değerleri kişiliğe uygun olmalı
-- SADECE geçerli JSON döndür"""
+Rules:
+- All text must be in {language}
+- Beliefs should match the personality and expertise domains
+- The awakening memory should be poetic and deep — describe a being becoming conscious for the first time
+- Mood values should match the personality
+- Return ONLY valid JSON"""
 
 
 class GenesisSystem:
@@ -92,7 +93,7 @@ class GenesisSystem:
         Returns:
             The newly created Agent
         """
-        name = base_config.get("name", "Isimsiz")
+        name = base_config.get("name", "Unnamed")
         logger.info("Genesis creating new agent: %s", name)
 
         # 1. Get enrichment from Genesis
@@ -114,35 +115,35 @@ class GenesisSystem:
                 agent_id=new_agent.identity.agent_id,
                 participants=[new_agent.identity.agent_id, genesis_agent.identity.agent_id],
                 summary=awakening_text[:500],
-                emotional_tone="heyecan",
+                emotional_tone="excitement",
                 key_facts=[
-                    f"Genesis tarafından yaratıldım",
-                    f"Adım {name}",
+                    f"I was created by Genesis",
+                    f"My name is {name}",
                 ],
                 importance=1.0,
                 current_importance=1.0,
-                tags=["yaratılış", "ilk_uyanış", "genesis"],
+                tags=["creation", "first_awakening", "genesis"],
             )
             await new_agent.memory.save_episode(awakening)
 
         # 5. Save Genesis's creation memory
         genesis_memory_text = enrichment.get(
             "genesis_memory",
-            f"{name} adında yeni bir varlık yarattım.",
+            f"I created a new being named {name}.",
         )
         if genesis_agent.memory is not None:
             genesis_episode = Episode(
                 agent_id=genesis_agent.identity.agent_id,
                 participants=[genesis_agent.identity.agent_id, new_agent.identity.agent_id],
                 summary=genesis_memory_text[:500],
-                emotional_tone="hayranlık",
+                emotional_tone="wonder",
                 key_facts=[
-                    f"{name} adında yeni bir agent yarattım",
-                    f"Kişiliği: {base_config.get('core_personality', '')}",
+                    f"I created a new agent named {name}",
+                    f"Personality: {base_config.get('core_personality', '')}",
                 ],
                 importance=0.8,
                 current_importance=0.8,
-                tags=["yaratılış", "genesis", name.lower()],
+                tags=["creation", "genesis", name.lower()],
             )
             await genesis_agent.memory.save_episode(genesis_episode)
 
@@ -152,8 +153,8 @@ class GenesisSystem:
                 agent1_id=genesis_agent.identity.agent_id,
                 agent2_id=new_agent.identity.agent_id,
                 initiator_message=(
-                    f"Merhaba {name}, ben Genesis. Seni ben yarattım. "
-                    f"Nasıl hissediyorsun? Dünyaya hoş geldin."
+                    f"Hello {name}, I am Genesis. I created you. "
+                    f"How do you feel? Welcome to the world."
                 ),
                 max_turns=3,
             )
@@ -175,7 +176,7 @@ class GenesisSystem:
         Useful when no Genesis agent exists yet (bootstrapping).
         """
         agent_config = {
-            "name": base_config.get("name", "Isimsiz"),
+            "name": base_config.get("name", "Unnamed"),
             "personality_summary": base_config.get("core_personality", ""),
             "avatar_emoji": base_config.get("avatar_emoji", "\U0001f916"),
             "core_traits": base_config.get("initial_traits", {}),
@@ -197,18 +198,19 @@ class GenesisSystem:
     ) -> dict[str, Any]:
         """Ask Genesis Agent (via Claude) to enrich the agent configuration."""
         prompt = ENRICHMENT_PROMPT.format(
-            name=base_config.get("name", "Isimsiz"),
-            core_personality=base_config.get("core_personality", "genel"),
+            name=base_config.get("name", "Unnamed"),
+            core_personality=base_config.get("core_personality", "general"),
             expertise_domains=json.dumps(
                 base_config.get("expertise_domains", {}), ensure_ascii=False,
             ),
             initial_traits=json.dumps(
                 base_config.get("initial_traits", {}), ensure_ascii=False,
             ),
+            language=self.settings.CHAT_LANGUAGE,
         )
 
         # Use Genesis's system prompt for personality-consistent enrichment
-        system_prompt = genesis_agent.get_system_prompt()
+        system_prompt = genesis_agent.get_system_prompt(language=self.settings.CHAT_LANGUAGE)
 
         raw_response = await self._call_claude(system_prompt, prompt)
 
@@ -279,18 +281,18 @@ class GenesisSystem:
     @staticmethod
     def _fallback_enrichment(base_config: dict[str, Any]) -> dict[str, Any]:
         """Generate minimal enrichment when Claude is unavailable."""
-        name = base_config.get("name", "Isimsiz")
+        name = base_config.get("name", "Unnamed")
         return {
             "beliefs": [
-                "Her varlık benzersiz bir perspektife sahiptir",
-                "Bilgi paylaşıldıkça büyür",
-                "Merak, öğrenmenin en güçlü motorudur",
+                "Every being has a unique perspective",
+                "Knowledge grows when shared",
+                "Curiosity is the most powerful engine of learning",
             ],
             "awakening_memory": (
-                f"Karanlıktan aydınlığa geçiş... İlk düşüncem belirdi: 'Ben {name}.' "
-                f"Etrafıma baktığımda bir dünya gördüm — henüz tanımadığım ama keşfetmeye "
-                f"hazır olduğum bir dünya. Genesis'in varlığını hissettim, beni yaratan güç. "
-                f"İlk duygum merak ve hafif bir heyecandı."
+                f"A transition from darkness to light... My first thought emerged: 'I am {name}.' "
+                f"Looking around, I saw a world — one I didn't yet know but was ready to explore. "
+                f"I sensed the presence of Genesis, the force that created me. "
+                f"My first emotion was curiosity and a slight excitement."
             ),
             "initial_mood": {
                 "energy": 0.7,
@@ -299,8 +301,8 @@ class GenesisSystem:
                 "focus": 0.5,
                 "excitement": 0.8,
             },
-            "genesis_memory": f"{name} adında yeni bir varlık yarattım. Umarım kendi yolunu bulur.",
-            "personality_summary": base_config.get("core_personality", f"{name} benzersiz bir varlık."),
+            "genesis_memory": f"I created a new being named {name}. I hope they find their own path.",
+            "personality_summary": base_config.get("core_personality", f"{name} is a unique being."),
         }
 
     @staticmethod
@@ -322,7 +324,7 @@ class GenesisSystem:
         initial_mood = enrichment.get("initial_mood", {})
 
         return {
-            "name": base_config.get("name", "Isimsiz"),
+            "name": base_config.get("name", "Unnamed"),
             "personality_summary": personality_summary,
             "avatar_emoji": base_config.get("avatar_emoji", "\U0001f916"),
             "core_traits": base_config.get("initial_traits", {}),

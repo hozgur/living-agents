@@ -131,17 +131,17 @@ class SemanticMemory:
 
     @staticmethod
     def to_prompt_summary(facts: list[KnowledgeFact]) -> str:
-        """Format facts as Turkish natural language for system prompt."""
+        """Format facts as natural language for system prompt."""
         if not facts:
-            return "(Bilinen gerçek yok)"
+            return "(No known facts)"
 
         lines = []
         for fact in facts:
             confidence_label = (
-                "kesin" if fact.confidence >= 0.9
-                else "güvenilir" if fact.confidence >= 0.7
-                else "belirsiz" if fact.confidence >= 0.4
-                else "şüpheli"
+                "certain" if fact.confidence >= 0.9
+                else "reliable" if fact.confidence >= 0.7
+                else "uncertain" if fact.confidence >= 0.4
+                else "doubtful"
             )
             lines.append(f"- {fact.subject} {fact.predicate} {fact.object} [{confidence_label}]")
         return "\n".join(lines)

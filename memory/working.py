@@ -59,8 +59,8 @@ class WorkingMemory:
         text_to_compress = "\n".join(text_parts)
 
         prompt = (
-            "Aşağıdaki konuşma parçasını Türkçe olarak kısa ve öz bir şekilde özetle. "
-            "Önemli bilgileri, kararları ve duygusal tonları koru:\n\n"
+            "Summarize the following conversation excerpt briefly and concisely. "
+            "Preserve important information, decisions, and emotional tones:\n\n"
             f"{text_to_compress}"
         )
 

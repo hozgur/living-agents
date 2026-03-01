@@ -121,75 +121,58 @@ class CharacterState(BaseModel):
         # If old belief not found, add the new one
         self.add_belief(new_text, conviction=0.5)
 
-    def to_prompt_description(self) -> str:
-        """Generate Turkish natural language description for system prompt."""
+    def to_prompt_description(self, language: str = "English") -> str:
+        """Generate natural language description for system prompt in the given language."""
         lines = []
 
         # Trait descriptions
-        trait_labels = {
-            "curiosity": "Merak",
-            "warmth": "Sıcaklık",
-            "assertiveness": "Kararlılık",
-            "humor": "Mizah",
-            "patience": "Sabır",
-            "creativity": "Yaratıcılık",
-        }
         trait_parts = []
         for trait, value in self.core_traits.items():
-            label = trait_labels.get(trait, trait)
             if value >= 0.8:
-                trait_parts.append(f"çok yüksek {label.lower()}")
+                trait_parts.append(f"very high {trait}")
             elif value >= 0.6:
-                trait_parts.append(f"yüksek {label.lower()}")
+                trait_parts.append(f"high {trait}")
             elif value >= 0.4:
-                trait_parts.append(f"orta düzey {label.lower()}")
+                trait_parts.append(f"moderate {trait}")
             elif value >= 0.2:
-                trait_parts.append(f"düşük {label.lower()}")
+                trait_parts.append(f"low {trait}")
             else:
-                trait_parts.append(f"çok düşük {label.lower()}")
-        lines.append(f"Temel özeliklerin: {', '.join(trait_parts)}.")
+                trait_parts.append(f"very low {trait}")
+        lines.append(f"Core traits: {', '.join(trait_parts)}.")
 
         # Mood description
-        mood_labels = {
-            "energy": "Enerji",
-            "happiness": "Mutluluk",
-            "anxiety": "Kaygı",
-            "focus": "Odaklanma",
-            "excitement": "Heyecan",
-        }
         mood_parts = []
         for mood, value in self.current_mood.items():
-            label = mood_labels.get(mood, mood)
             if value >= 0.7:
-                mood_parts.append(f"yüksek {label.lower()}")
+                mood_parts.append(f"high {mood}")
             elif value >= 0.3:
-                mood_parts.append(f"orta {label.lower()}")
+                mood_parts.append(f"moderate {mood}")
             else:
-                mood_parts.append(f"düşük {label.lower()}")
-        lines.append(f"Şu anki ruh halin: {', '.join(mood_parts)}.")
+                mood_parts.append(f"low {mood}")
+        lines.append(f"Current mood: {', '.join(mood_parts)}.")
 
         # Beliefs with conviction levels
         if self.beliefs:
             belief_parts = []
             for b in sorted(self.beliefs, key=lambda x: x.conviction, reverse=True):
                 if b.conviction >= 0.8:
-                    belief_parts.append(f"'{b.text}' (güçlü inanç)")
+                    belief_parts.append(f"'{b.text}' (strong conviction)")
                 elif b.conviction >= 0.5:
                     belief_parts.append(f"'{b.text}'")
                 else:
-                    belief_parts.append(f"'{b.text}' (sorguluyorsun)")
-            lines.append(f"İnançların: {'; '.join(belief_parts)}.")
+                    belief_parts.append(f"'{b.text}' (questioning)")
+            lines.append(f"Beliefs: {'; '.join(belief_parts)}.")
 
         # Relationships
         if self.relationships:
             rel_parts = []
             for entity_id, rel in self.relationships.items():
                 if rel.trust >= 0.7:
-                    rel_parts.append(f"{entity_id} ile güçlü bir güven bağın var")
+                    rel_parts.append(f"you have a strong bond of trust with {entity_id}")
                 elif rel.trust >= 0.4:
-                    rel_parts.append(f"{entity_id} ile gelişen bir ilişkin var")
+                    rel_parts.append(f"you have a developing relationship with {entity_id}")
                 else:
-                    rel_parts.append(f"{entity_id} ile yeni tanışıyorsun")
+                    rel_parts.append(f"you are just getting to know {entity_id}")
             lines.append(" ".join(rel_parts) + ".")
 
         return "\n".join(lines)

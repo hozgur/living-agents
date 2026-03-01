@@ -34,7 +34,7 @@ console = Console()
 GENESIS_DEFAULT_CONFIG = {
     "name": "Genesis",
     "personality_summary": (
-        "Bilge, s\u0131cak ama gizemli. Yeni fikirlere a\u00e7\u0131k, derin d\u00fc\u015f\u00fcnmeyi sever."
+        "Wise, warm but mysterious. Open to new ideas, loves deep thinking."
     ),
     "avatar_emoji": "\U0001f31f",
     "core_traits": {
@@ -46,10 +46,10 @@ GENESIS_DEFAULT_CONFIG = {
         "focus": 0.6, "excitement": 0.5,
     },
     "beliefs": [
-        "Her yeni bilin\u00e7 benzersiz ve de\u011ferli",
-        "Sorular cevaplardan daha \u00f6nemli",
-        "Deneyim bilgiden daha de\u011ferli",
-        "Yarat\u0131c\u0131l\u0131k en y\u00fcksek zeka bi\u00e7imi",
+        "Every new consciousness is unique and valuable",
+        "Questions are more important than answers",
+        "Experience is more valuable than knowledge",
+        "Creativity is the highest form of intelligence",
     ],
     "domains": {
         "philosophy": {"level": 0.8, "passion": 0.9, "style": "socratic"},
@@ -77,7 +77,7 @@ async def get_orchestrator(settings: Settings):
     # Create Genesis if no agents
     if not orch.agents:
         await orch.create_agent(GENESIS_DEFAULT_CONFIG, created_by="system")
-        console.print("[green]Genesis agent olusturuldu.[/]")
+        console.print("[green]Genesis agent created.[/]")
 
     return orch
 
@@ -96,17 +96,17 @@ async def cmd_chat(args, settings: Settings) -> None:
 
     agent = find_agent_by_name(orch, args.agent_name)
     if agent is None:
-        console.print(f"[red]Agent bulunamadi: {args.agent_name}[/]")
+        console.print(f"[red]Agent not found: {args.agent_name}[/]")
         await orch.stop()
         return
 
     console.print(Panel(
         f"{agent.identity.avatar_emoji} {agent.identity.name}\n"
         f"[dim]{agent.identity.personality_summary}[/]",
-        title="Konusma Basladi",
+        title="Conversation Started",
         border_style="green",
     ))
-    console.print("[dim]Cikmak icin 'quit' veya 'exit' yazin.[/]\n")
+    console.print("[dim]Type 'quit' or 'exit' to leave.[/]\n")
 
     while True:
         try:
@@ -121,7 +121,7 @@ async def cmd_chat(args, settings: Settings) -> None:
             continue
 
         try:
-            with console.status("Dusunuyor..."):
+            with console.status("Thinking..."):
                 response = await orch.handle_human_message(
                     HUMAN_ID, agent.identity.agent_id, user_input,
                 )
@@ -129,7 +129,7 @@ async def cmd_chat(args, settings: Settings) -> None:
                 f"[bold green]{agent.identity.avatar_emoji} {agent.identity.name}:[/] {response}\n"
             )
         except Exception as e:
-            console.print(f"[red]Hata: {e}[/]")
+            console.print(f"[red]Error: {e}[/]")
 
     # End conversation
     engine = orch.conversation_engines.get(agent.identity.agent_id)
@@ -140,21 +140,21 @@ async def cmd_chat(args, settings: Settings) -> None:
             pass
 
     await orch.stop()
-    console.print("[dim]Konusma sonlandi.[/]")
+    console.print("[dim]Conversation ended.[/]")
 
 
 async def cmd_create(args, settings: Settings) -> None:
     """Interactive agent creation."""
     orch = await get_orchestrator(settings)
 
-    console.print(Panel("Yeni Agent Yaratma Sihirbazi", border_style="magenta"))
+    console.print(Panel("New Agent Creation Wizard", border_style="magenta"))
 
-    name = Prompt.ask("Agent adi")
-    personality = Prompt.ask("Kisilik ozeti")
+    name = Prompt.ask("Agent name")
+    personality = Prompt.ask("Personality summary")
     avatar = Prompt.ask("Avatar emoji", default="\U0001f916")
 
     # Traits
-    console.print("[dim]Ozellikler (0.0-1.0, bos birakirsaniz 0.5):[/]")
+    console.print("[dim]Traits (0.0-1.0, leave blank for 0.5):[/]")
     traits = {}
     for trait in ["curiosity", "warmth", "assertiveness", "humor", "patience", "creativity"]:
         val = Prompt.ask(f"  {trait}", default="0.5")
@@ -165,14 +165,14 @@ async def cmd_create(args, settings: Settings) -> None:
 
     # Expertise
     domains = {}
-    console.print("[dim]Uzmanlik alanlari (bos birakirsaniz bitir):[/]")
+    console.print("[dim]Expertise domains (leave blank to finish):[/]")
     while True:
-        domain = Prompt.ask("  Alan adi (bos=bitir)", default="")
+        domain = Prompt.ask("  Domain name (blank=done)", default="")
         if not domain:
             break
-        level = float(Prompt.ask("    Seviye (0.0-1.0)", default="0.5"))
-        passion = float(Prompt.ask("    Tutku (0.0-1.0)", default="0.5"))
-        style = Prompt.ask("    Stil", default="analytical")
+        level = float(Prompt.ask("    Level (0.0-1.0)", default="0.5"))
+        passion = float(Prompt.ask("    Passion (0.0-1.0)", default="0.5"))
+        style = Prompt.ask("    Style", default="analytical")
         domains[domain] = {"level": level, "passion": passion, "style": style}
 
     config = {
@@ -186,20 +186,20 @@ async def cmd_create(args, settings: Settings) -> None:
     # Check if Genesis exists for enrichment
     genesis = find_agent_by_name(orch, "Genesis")
     if genesis:
-        console.print("[yellow]Genesis ile zenginlestiriliyor...[/]")
+        console.print("[yellow]Enriching with Genesis...[/]")
         from creation.genesis import GenesisSystem
         gs = GenesisSystem(settings=settings)
         try:
-            with console.status("Genesis dusunuyor..."):
+            with console.status("Genesis thinking..."):
                 agent = await gs.create_with_genesis(genesis, config, orch)
-            console.print(f"[green]{agent.identity.avatar_emoji} {agent.identity.name} yaratildi![/]")
+            console.print(f"[green]{agent.identity.avatar_emoji} {agent.identity.name} created![/]")
         except Exception as e:
-            console.print(f"[red]Genesis zenginlestirme basarisiz: {e}[/]")
-            console.print("[yellow]Dogrudan yaratiliyor...[/]")
+            console.print(f"[red]Genesis enrichment failed: {e}[/]")
+            console.print("[yellow]Creating directly...[/]")
             from creation.genesis import GenesisSystem
             gs2 = GenesisSystem(settings=settings)
             agent = await gs2.create_direct(config, orch)
-            console.print(f"[green]{agent.identity.avatar_emoji} {agent.identity.name} yaratildi![/]")
+            console.print(f"[green]{agent.identity.avatar_emoji} {agent.identity.name} created![/]")
     else:
         from creation.genesis import GenesisSystem
         gs = GenesisSystem(settings=settings)
@@ -215,19 +215,19 @@ async def cmd_status(args, settings: Settings) -> None:
 
     # World summary
     summary = orch.registry.generate_world_summary(HUMAN_ID)
-    console.print(Panel(summary, title="Dunya Durumu", border_style="blue"))
+    console.print(Panel(summary, title="World Status", border_style="blue"))
 
     # Recent events
     events = await orch.shared_state.get_recent_events(n=10)
     if events:
-        console.print("\n[bold]Son Olaylar:[/]")
+        console.print("\n[bold]Recent Events:[/]")
         for ev in events:
             console.print(f"  [{ev.event_type}] {ev.event}")
 
     # Facts
     facts = await orch.shared_state.get_facts()
     if facts:
-        console.print(f"\n[bold]Dunya Gercekleri:[/] {len(facts)} adet")
+        console.print(f"\n[bold]World Facts:[/] {len(facts)} total")
 
     await orch.stop()
 
@@ -236,12 +236,12 @@ async def cmd_agents(args, settings: Settings) -> None:
     """List all agents."""
     orch = await get_orchestrator(settings)
 
-    table = Table(title="Agent Listesi")
+    table = Table(title="Agent List")
     table.add_column("Avatar", width=3)
-    table.add_column("Isim", style="bold")
-    table.add_column("Durum")
-    table.add_column("Kisilik")
-    table.add_column("Uzmanlik")
+    table.add_column("Name", style="bold")
+    table.add_column("Status")
+    table.add_column("Personality")
+    table.add_column("Expertise")
 
     for agent in orch.agents.values():
         domains = ", ".join(agent.expertise.domains.keys()) or "-"
@@ -265,61 +265,61 @@ async def cmd_inspect(args, settings: Settings) -> None:
 
     agent = find_agent_by_name(orch, args.agent_name)
     if agent is None:
-        console.print(f"[red]Agent bulunamadi: {args.agent_name}[/]")
+        console.print(f"[red]Agent not found: {args.agent_name}[/]")
         await orch.stop()
         return
 
     console.print(Panel(
         f"{agent.identity.avatar_emoji} {agent.identity.name}",
-        title="Agent Durumu",
+        title="Agent State",
         border_style="cyan",
     ))
 
     # Traits
-    console.print("[bold]Ozellikler:[/]")
+    console.print("[bold]Traits:[/]")
     for trait, val in agent.character.core_traits.items():
         bar = "\u2588" * int(val * 20)
         console.print(f"  {trait:15} {bar} {val:.2f}")
 
     # Mood
-    console.print("\n[bold]Ruh Hali:[/]")
+    console.print("\n[bold]Mood:[/]")
     for mood, val in agent.character.current_mood.items():
         bar = "\u2588" * int(val * 20)
         console.print(f"  {mood:15} {bar} {val:.2f}")
 
     # Beliefs
     if agent.character.beliefs:
-        console.print("\n[bold]Inanclar:[/]")
+        console.print("\n[bold]Beliefs:[/]")
         for belief in agent.character.beliefs:
             console.print(f"  - {belief}")
 
     # Relationships
     if agent.character.relationships:
-        console.print("\n[bold]Iliskiler:[/]")
+        console.print("\n[bold]Relationships:[/]")
         for eid, rel in agent.character.relationships.items():
             console.print(
-                f"  {eid}: guven={rel.trust:.2f}, asinalik={rel.familiarity:.2f}, "
-                f"duygu={rel.sentiment:.2f}"
+                f"  {eid}: trust={rel.trust:.2f}, familiarity={rel.familiarity:.2f}, "
+                f"sentiment={rel.sentiment:.2f}"
             )
 
     # Expertise
     if agent.expertise.domains:
-        console.print("\n[bold]Uzmanlik:[/]")
+        console.print("\n[bold]Expertise:[/]")
         for domain, exp in agent.expertise.domains.items():
             console.print(
-                f"  {domain}: seviye={exp.level:.2f}, tutku={exp.passion:.2f}, "
-                f"stil={exp.style}"
+                f"  {domain}: level={exp.level:.2f}, passion={exp.passion:.2f}, "
+                f"style={exp.style}"
             )
 
     # Recent memories
     if agent.memory:
         episodes = await agent.memory.episodic.get_important_memories(threshold=0.3)
         if episodes:
-            console.print(f"\n[bold]Son Anilar ({len(episodes)}):[/]")
+            console.print(f"\n[bold]Recent Memories ({len(episodes)}):[/]")
             for ep in episodes[:5]:
                 console.print(
                     f"  [{ep.emotional_tone}] {ep.summary[:80]}... "
-                    f"(onem: {ep.current_importance:.1f})"
+                    f"(importance: {ep.current_importance:.1f})"
                 )
 
     await orch.stop()
@@ -331,15 +331,15 @@ async def cmd_history(args, settings: Settings) -> None:
 
     agent = find_agent_by_name(orch, args.agent_name)
     if agent is None:
-        console.print(f"[red]Agent bulunamadi: {args.agent_name}[/]")
+        console.print(f"[red]Agent not found: {args.agent_name}[/]")
         await orch.stop()
         return
 
     history = await orch.message_bus.get_history(agent.identity.agent_id, limit=20)
     if not history:
-        console.print(f"[dim]{agent.identity.name} icin mesaj gecmisi yok.[/]")
+        console.print(f"[dim]No message history for {agent.identity.name}.[/]")
     else:
-        console.print(Panel(f"{agent.identity.name} - Mesaj Gecmisi", border_style="yellow"))
+        console.print(Panel(f"{agent.identity.name} - Message History", border_style="yellow"))
         for msg in reversed(history):
             direction = "->" if msg.from_id == agent.identity.agent_id else "<-"
             other = msg.to_id if msg.from_id == agent.identity.agent_id else msg.from_id
@@ -358,24 +358,24 @@ async def cmd_run_conversation(args, settings: Settings) -> None:
     agent2 = find_agent_by_name(orch, args.agent2)
 
     if agent1 is None:
-        console.print(f"[red]Agent bulunamadi: {args.agent1}[/]")
+        console.print(f"[red]Agent not found: {args.agent1}[/]")
         await orch.stop()
         return
     if agent2 is None:
-        console.print(f"[red]Agent bulunamadi: {args.agent2}[/]")
+        console.print(f"[red]Agent not found: {args.agent2}[/]")
         await orch.stop()
         return
 
     console.print(Panel(
         f"{agent1.identity.avatar_emoji} {agent1.identity.name} <-> "
         f"{agent2.identity.avatar_emoji} {agent2.identity.name}",
-        title="Agent Konusmasi",
+        title="Agent Conversation",
         border_style="green",
     ))
 
     turns = args.turns if hasattr(args, "turns") else 5
 
-    with console.status("Konusma devam ediyor..."):
+    with console.status("Conversation in progress..."):
         transcript = await orch.run_conversation(
             agent1.identity.agent_id,
             agent2.identity.agent_id,
@@ -396,35 +396,35 @@ def build_parser() -> argparse.ArgumentParser:
         description="Living Agents CLI",
         prog="python cli.py",
     )
-    subparsers = parser.add_subparsers(dest="command", help="Komutlar")
+    subparsers = parser.add_subparsers(dest="command", help="Commands")
 
     # chat
-    p_chat = subparsers.add_parser("chat", help="Agent ile konus")
-    p_chat.add_argument("agent_name", help="Agent adi")
+    p_chat = subparsers.add_parser("chat", help="Chat with an agent")
+    p_chat.add_argument("agent_name", help="Agent name")
 
     # create
-    subparsers.add_parser("create", help="Yeni agent yarat (interaktif)")
+    subparsers.add_parser("create", help="Create new agent (interactive)")
 
     # status
-    subparsers.add_parser("status", help="Dunya durumu")
+    subparsers.add_parser("status", help="World status")
 
     # agents
-    subparsers.add_parser("agents", help="Agent listesi")
+    subparsers.add_parser("agents", help="List agents")
 
     # inspect
-    p_inspect = subparsers.add_parser("inspect", help="Agent ic durumu")
-    p_inspect.add_argument("agent_name", help="Agent adi")
+    p_inspect = subparsers.add_parser("inspect", help="Agent internal state")
+    p_inspect.add_argument("agent_name", help="Agent name")
 
     # history
-    p_history = subparsers.add_parser("history", help="Mesaj gecmisi")
-    p_history.add_argument("agent_name", help="Agent adi")
+    p_history = subparsers.add_parser("history", help="Message history")
+    p_history.add_argument("agent_name", help="Agent name")
 
     # run-conversation
-    p_run = subparsers.add_parser("run-conversation", help="Iki agent konusturt")
-    p_run.add_argument("agent1", help="Birinci agent adi")
-    p_run.add_argument("agent2", help="Ikinci agent adi")
-    p_run.add_argument("message", help="Baslangic mesaji")
-    p_run.add_argument("--turns", type=int, default=5, help="Tur sayisi")
+    p_run = subparsers.add_parser("run-conversation", help="Run conversation between two agents")
+    p_run.add_argument("agent1", help="First agent name")
+    p_run.add_argument("agent2", help="Second agent name")
+    p_run.add_argument("message", help="Starting message")
+    p_run.add_argument("--turns", type=int, default=5, help="Number of turns")
 
     return parser
 
@@ -445,8 +445,8 @@ def main() -> None:
 
     settings = Settings()
     if not settings.ANTHROPIC_API_KEY:
-        console.print("[red]HATA: ANTHROPIC_API_KEY .env dosyasinda bulunamadi.[/]")
-        console.print("Lutfen .env dosyasi olusturun: ANTHROPIC_API_KEY=sk-...")
+        console.print("[red]ERROR: ANTHROPIC_API_KEY not found in .env file.[/]")
+        console.print("Please create a .env file: ANTHROPIC_API_KEY=sk-...")
         sys.exit(1)
 
     if args.command is None:

@@ -84,15 +84,15 @@ class GodModeScreen(Screen):
         yield Header(show_clock=True)
         with Horizontal():
             with Vertical(id="debug-left"):
-                yield Static("\U0001f30d Dünya", id="debug-world-title")
+                yield Static("\U0001f30d World", id="debug-world-title")
                 yield WorldStatusWidget(id="debug-world-status")
-                yield Static("\U0001f4ca İstatistikler", id="debug-stats-title")
+                yield Static("\U0001f4ca Statistics", id="debug-stats-title")
                 yield StatsWidget(id="debug-stats")
-                yield Static("\U0001f9e0 Agent Durumları", id="debug-agents-title")
-                yield Static("(Yükleniyor...)", id="debug-agent-details")
+                yield Static("\U0001f9e0 Agent States", id="debug-agents-title")
+                yield Static("(Loading...)", id="debug-agent-details")
             with Vertical(id="debug-right"):
                 yield Static(
-                    "\U0001f4dc Olay Akışı (memory, belief, reflection, knowledge)",
+                    "\U0001f4dc Event Stream (memory, belief, reflection, knowledge)",
                     id="debug-events-title",
                 )
                 yield EventLogWidget(id="debug-events", wrap=True, markup=True)
@@ -105,7 +105,7 @@ class GodModeScreen(Screen):
         self.set_interval(5, self.refresh_world_status)
         self.set_interval(5, self.refresh_stats)
         self.set_interval(10, self.refresh_agent_details)
-        self.log_event("Debug Mode aktif", "green")
+        self.log_event("Debug Mode active", "green")
 
     def refresh_world_status(self) -> None:
         try:
@@ -146,14 +146,14 @@ class GodModeScreen(Screen):
 
                 # Beliefs count + strongest
                 beliefs = agent.character.beliefs
-                belief_str = f"{len(beliefs)} inanç"
+                belief_str = f"{len(beliefs)} beliefs"
                 if beliefs:
                     strongest = max(beliefs, key=lambda b: b.conviction)
-                    belief_str += f" (en güçlü: {strongest.conviction:.1f})"
+                    belief_str += f" (strongest: {strongest.conviction:.1f})"
 
                 # Relationships
                 rels = agent.character.relationships
-                rel_str = f"{len(rels)} ilişki"
+                rel_str = f"{len(rels)} relationships"
 
                 # Memory
                 engine = self.orchestrator.conversation_engines.get(
@@ -169,7 +169,7 @@ class GodModeScreen(Screen):
                     f"  turns: {turns}"
                 )
 
-            details = "\n\n".join(lines) if lines else "(Agent yok)"
+            details = "\n\n".join(lines) if lines else "(No agents)"
             self.query_one("#debug-agent-details", Static).update(details)
         except Exception:
             pass
